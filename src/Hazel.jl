@@ -9,7 +9,10 @@ The entrypoint to this module is `AbstractÀpplication`
 module Hazel
 
 
-include("Application.jl")
+include("Events/Events.jl")
 
+
+include("Application.jl")
+export DummyApplication
 
 end
