@@ -11,6 +11,8 @@ module Hazel
 
 include("Events/Events.jl")
 
+using GLFW
+include("Window/Window.jl")
 
 include("Application.jl")
 export DummyApplication
