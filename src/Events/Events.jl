@@ -1,12 +1,8 @@
 """
-Events are currently designed with multiple dispatch in mind. Functions that
-process Events should generally take the form `foo(::EventType)` where
-`EventType` is some type of event.
+Design:
+- backend callbacks create an AbstractEvent and call `on_event(app, event)`
+- on_event(app, event) propagates to everything else
 
-For example, writing a specific key to the console might be
-```
-log_event(io::IO, ::KeyPressedEvent{Key.A}) = @info "Key <A> has been pressed!"
-```
 
 ## Type Tree
 
@@ -64,12 +60,23 @@ struct KeyReleasedEvent{keycode} <: KeyboardEvent{keycode} end
 
 
 struct MouseMovedEvent <: MouseEvent
-    x::Int64
-    y::Int64
+    x::Float64
+    y::Float64
 end
 struct MouseScrolledEvent <: MouseEvent
-    x_shift::Int64
-    y_shift::Int64
+    x_shift::Float64
+    y_shift::Float64
 end
 struct MouseButtonPressedEvent{button} <: MouseButtonEvent{button} end
 struct MouseButtonReleasedEvent{button} <: MouseButtonEvent{button} end
+
+
+function on_event(t::Any, e::AbstractEvent)
+    @debug "Event $e targeted at $t has been discarded. (Missing method)"
+    nothing
+end
+
+# Overloaded for ``@info obj` etc
+Base.string(::T) where {T <: AbstractEvent} = string(T)
+Base.string(e::MouseMovedEvent) = "MouseMovedEvent($(e.x), $(e.y))"
+Base.string(e::MouseScrolledEvent) = "MouseScrolledEvent($(e.x_shift), $(e.y_shift))"
