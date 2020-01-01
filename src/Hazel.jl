@@ -15,7 +15,7 @@ include("Events/Events.jl")
 include("Layers/Layers.jl")
 
 # A thing to render on
-using GLFW
+using GLFW, ModernGL
 include("Window/Window.jl")
 
 # An Application holds everything together
