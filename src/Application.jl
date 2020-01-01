@@ -1,9 +1,4 @@
-# TODO Should this be deleted?
 abstract type AbstractApplication end
-
-function Base.run(::AbstractApplication)
-    nothing
-end
 
 
 
@@ -18,20 +13,20 @@ mutable struct DummyApplication <: AbstractApplication
         @warn "Julia Debugging"
         @info "Application starting up"
         app = new()
-        app.window = GLFWWindow(WindowProperties(), e -> on_event(app, e))
+        app.window = GLFWWindow(WindowProperties(), e -> handle!(app, e))
         app.running = true
         app.layerstack = MutableLayerStack()
         app
     end
 end
 
-function renderloop(app::DummyApplication)
+function renderloop(app::AbstractApplication)
     while app.running
-        on_update(app.window)
+        update!(app.window)
 
         # Render layers in order (bottom to top)
         for layer in app.layerstack
-            on_update(layer)
+            update!(layer)
         end
 
         yield()
@@ -40,44 +35,46 @@ function renderloop(app::DummyApplication)
     destroy(app.window)
 end
 
-function Base.run(app::DummyApplication)
+function Base.run(app::AbstractApplication)
     @async renderloop(app)
 end
 
-function destroy(app::DummyApplication)
+function destroy(app::AbstractApplication)
     app.running = false
     nothing
 end
 
-function on_event(app::DummyApplication, event::AbstractEvent)
-    @info event
-    on_event(app.window, event)
+function handle!(app::AbstractApplication, event::AbstractEvent)
+    # handle! returns true if the event has been processed
+    handle!(app.window, event) && return true
 
     for layer in Iterators.reverse(app.layerstack)
-        on_event(layer)
+        handle!(layer, event) && return true
     end
 
-    nothing
+    @warn "Event $event has not been handled!"
+
+    false
 end
 
 
-function Base.push!(app::DummyApplication, layer::AbstractLayer)
+function Base.push!(app::AbstractApplication, layer::AbstractLayer)
     push!(app.layerstack, layer)
 end
-function push_overlay!(app::DummyApplication, layer::AbstractLayer)
+function push_overlay!(app::AbstractApplication, layer::AbstractLayer)
     push_overlay!(app.layerstack, layer)
 end
-function Base.pop!(app::DummyApplication, layer::AbstractLayer)
+function Base.pop!(app::AbstractApplication, layer::AbstractLayer)
     pop!(app.layerstack, layer)
 end
-function pop_overlay!(app::DummyApplication, layer::AbstractLayer)
+function pop_overlay!(app::AbstractApplication, layer::AbstractLayer)
     pop_overlay!(app.layerstack, layer)
 end
 
 
 
-function on_event(app::DummyApplication, event::WindowCloseEvent)
+function handle!(app::AbstractApplication, event::WindowCloseEvent)
     @warn "Closing Window"
     destroy(app)
-    nothing
+    true
 end

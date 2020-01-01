@@ -1,11 +1,14 @@
 abstract type AbstractLayer end
 
 # Interface
-on_attach(l::AbstractLayer) = @debug "$(name(l)) does not implement `on_attach`"
-on_detach(l::AbstractLayer) = @debug "$(name(l)) does not implement `on_detach`"
-on_update(l::AbstractLayer) = @debug "$(name(l)) does not implement `on_update`"
-on_event(l::AbstractLayer) = @debug "$(name(l)) does not implement `on_event`"
-name(l::AbstractLayer) = "unnamed layer $(typeof(l).name)" # for debug
+attach(l::AbstractLayer) = @debug "$l does not implement `on_attach`"
+detach(l::AbstractLayer) = @debug "$l does not implement `on_detach`"
+update!(l::AbstractLayer) = @debug "$l does not implement `update!`"
+function handle!(l::AbstractLayer, event::AbstractEvent)
+    @debug "$(name(l)) does not implement `handle!`"
+    false
+end
+Base.string(l::AbstractLayer) = "Unnamed Layer $(typeof(l).name)" # for debug
 
 
 

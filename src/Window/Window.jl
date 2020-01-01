@@ -21,7 +21,7 @@ Any Widow inheriting from AbstractWindow should implement
 
 - A constructor `Window(title, width, height[, vsync])`
 - A destructor `destroy!(window)`
-- `on_update`
+- `update!`
 - `set_event_callback`
 - `set_vsync(window, bool)`
 - `get_vsync(window)`
@@ -75,7 +75,7 @@ destroy(window::GLFWWindow) = GLFW.DestroyWindow(window.window)
 set_vsync(window::GLFWWindow, on::Bool) = GLFW.SwapInterval(on ? 1 : 0)
 
 
-function on_update(window::GLFWWindow)
+function update!(window::GLFWWindow)
     GLFW.PollEvents()
     GLFW.SwapBuffers(window.window)
     nothing

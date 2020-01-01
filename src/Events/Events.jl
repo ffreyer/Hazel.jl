@@ -1,7 +1,7 @@
 """
 Design:
-- backend callbacks create an AbstractEvent and call `on_event(app, event)`
-- on_event(app, event) propagates to everything else
+- backend callbacks create an AbstractEvent and call `handle!(app, event)`
+- handle!(app, event) propagates to everything else
 
 
 ## Type Tree
@@ -70,10 +70,15 @@ end
 struct MouseButtonPressedEvent{button} <: MouseButtonEvent{button} end
 struct MouseButtonReleasedEvent{button} <: MouseButtonEvent{button} end
 
+"""
+    handle!(object, event)
 
-function on_event(t::Any, e::AbstractEvent)
+Let `object` handle the `event`. May change the state of `object`. Returns true
+if the `object` has been handled.
+"""
+function handle!(t::Any, e::AbstractEvent)
     @debug "Event $e targeted at $t has been discarded. (Missing method)"
-    nothing
+    false
 end
 
 # Overloaded for ``@info obj` etc

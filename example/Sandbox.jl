@@ -6,9 +6,9 @@ struct ExampleLayer <: Hazel.AbstractLayer
     name::String
     ExampleLayer(name::String = "Example") = new(name)
 end
-Hazel.on_update(l::ExampleLayer) = @info "update $l"
-Hazel.on_event(l::ExampleLayer, e::Hazel.AbstractEvent) = @warn e
-Hazel.name(l::ExampleLayer) = l.name
+Hazel.update!(l::ExampleLayer) = @info "update $l"
+Hazel.handle!(l::ExampleLayer, e::Hazel.AbstractEvent) = begin @warn e; true end
+Hazel.string(l::ExampleLayer) = l.name
 
 
 app = DummyApplication()

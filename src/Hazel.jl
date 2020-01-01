@@ -8,23 +8,18 @@ The entrypoint to this module is `AbstractÀpplication`
 """
 module Hazel
 
+# Events are passed around to notify stuff of other stuff
 include("Events/Events.jl")
 
+# Layers define renderorder
 include("Layers/Layers.jl")
 
+# A thing to render on
 using GLFW
 include("Window/Window.jl")
 
+# An Application holds everything together
 include("Application.jl")
 export DummyApplication
 
 end
-
-# TODO
-# - change on_update to update
-# - maybe change on_event to process_event? or just process?
-# - DummyApplication -> Application, remove abstract? or
-#   make methods implementations of AbstractApplication
-# - change events: no handled, but on_event should return true if the event
-#   has been dealt with
-# - Remove on_ from AbstractLayer functions
