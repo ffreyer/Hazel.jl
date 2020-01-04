@@ -3,13 +3,15 @@ mutable struct WindowProperties
     title::String
     width::UInt32
     height::UInt32
+    isopen::Bool
 
     function WindowProperties(
             title = "Hazel Engine",
             width = 1280,
-            height = 720
+            height = 720,
+            isopen = true
         )
-        new(title, width, height)
+        new(title, width, height, isopen)
     end
 end
 

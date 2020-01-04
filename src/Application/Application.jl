@@ -14,12 +14,20 @@ mutable struct DummyApplication <: AbstractApplication
         @warn "Julia Debugging"
         @info "Application starting up"
         app = new()
-        app.window = GLFWWindow(WindowProperties(), e -> handle!(app, e))
-        app.running = true
-        app.layerstack = MutableLayerStack()
+        init!(app)
         app
     end
 end
+
+function init!(app::DummyApplication)
+    if !isdefined(app, :window) || !isopen(app.window)
+        app.window = GLFWWindow(WindowProperties(), e -> handle!(app, e))
+    end
+    app.running = true
+    !isdefined(app, :layerstack) && (app.layerstack = MutableLayerStack())
+    app
+end
+
 
 function renderloop(app::AbstractApplication)
     while app.running
@@ -39,7 +47,7 @@ function renderloop(app::AbstractApplication)
 end
 
 function Base.run(app::AbstractApplication)
-    app.running = true
+    init!(app)
     @async renderloop(app)
 end
 

@@ -3,7 +3,7 @@
 # This kinda has to be mutable right? :(
 struct GLFWWindow <: AbstractWindow
     window::GLFW.Window
-    window_properties::WindowProperties
+    properties::WindowProperties
 end
 
 function GLFWWindow(props::WindowProperties, event_callback::Function, vsync=true)
@@ -40,7 +40,12 @@ function GLFWWindow(props::WindowProperties, event_callback::Function, vsync=tru
     window
 end
 
-destroy(window::GLFWWindow) = GLFW.DestroyWindow(window.window)
+function destroy(window::GLFWWindow)
+    window.properties.isopen = false
+    GLFW.DestroyWindow(window.window)
+    nothing
+end
+isopen(window::GLFWWindow) = window.properties.isopen
 set_vsync(window::GLFWWindow, on::Bool) = GLFW.SwapInterval(on ? 1 : 0)
 
 
