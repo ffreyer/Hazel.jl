@@ -1,8 +1,8 @@
 abstract type AbstractLayer end
 
 # Interface
-attach(l::AbstractLayer) = @debug "$l does not implement `on_attach`"
-detach(l::AbstractLayer) = @debug "$l does not implement `on_detach`"
+attach(l::AbstractLayer, app::AbstractApplication) = @debug "$l does not implement `on_attach`"
+detach(l::AbstractLayer, app::AbstractApplication) = @debug "$l does not implement `on_detach`"
 update!(l::AbstractLayer) = @debug "$l does not implement `update!`"
 function handle!(l::AbstractLayer, event::AbstractEvent)
     @debug "$(name(l)) does not implement `handle!`"
@@ -65,8 +65,15 @@ end
 Base.push!(ls::MutableLayerStack, l::AbstractLayer) = push!(ls.layers, l)
 push_overlay!(ls::MutableLayerStack, l::AbstractLayer) = push!(ls.overlayers, l)
 Base.pop!(ls::MutableLayerStack) = pop!(ls.layers)
-pop_overlay!(ls::MutableLayerStack) = pop!(ls.layers)
-
+pop_overlay!(ls::MutableLayerStack) = pop!(ls.overlayers)
+function Base.empty!(ls::MutableLayerStack, app::AbstractApplication)
+    for layer in ls
+        detach(layer, app)
+    end
+    empty!(ls.layers)
+    empty!(ls.overlayers)
+    ls
+end
 
 function StaticLayerStack(;
         layers = AbstractLayer[],

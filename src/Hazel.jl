@@ -8,6 +8,8 @@ The entrypoint to this module is `AbstractÀpplication`
 """
 module Hazel
 
+abstract type AbstractApplication end
+
 # Maths
 using LinearAlgebra
 # Stolen from GeometryTypes.jl, adds shorthands like Mat4f0, Vec3, Point2, ...
@@ -32,7 +34,9 @@ include("Layers/Layers.jl")
 using GLFW, ModernGL
 include("Window/Window.jl")
 
-# sad GUI noises
+using CImGui
+include("Layers/ImGuiLayer.jl")
+
 
 # An Application holds everything together
 # TODO

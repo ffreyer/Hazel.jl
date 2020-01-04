@@ -1,6 +1,6 @@
 using Revise
 using Hazel
-using GLFW
+# using GLFW
 
 # implement Layer
 struct ExampleLayer <: Hazel.AbstractLayer
@@ -16,8 +16,9 @@ Hazel.string(l::ExampleLayer) = l.name
 
 
 app = DummyApplication()
+# Hazel.pop_overlay!(app.layerstack)
 push!(app, ExampleLayer())
 run(app)
 
 
-GLFW.DestroyWindow(app.window.window)
+Hazel.GLFW.DestroyWindow(app.window.window)
