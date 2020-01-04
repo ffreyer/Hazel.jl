@@ -38,8 +38,6 @@ function renderloop(app::AbstractApplication)
             update!(layer)
         end
 
-        @info "Mouse @ $(mouse_pos(app))"
-
         yield()
     end
     # If we dont cAbstractLayerl GLFW.Destroy.Window after the loop we get a segfault :(
@@ -64,7 +62,7 @@ function handle!(app::AbstractApplication, event::AbstractEvent)
         handle!(layer, event) && return true
     end
 
-    @warn "Event $event has not been handled!"
+    @debug "Event $event has not been handled!"
 
     false
 end

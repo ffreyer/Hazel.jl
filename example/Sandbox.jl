@@ -6,8 +6,11 @@ struct ExampleLayer <: Hazel.AbstractLayer
     name::String
     ExampleLayer(name::String = "Example") = new(name)
 end
-Hazel.update!(l::ExampleLayer) = @info "update $l"
-Hazel.handle!(l::ExampleLayer, e::Hazel.AbstractEvent) = begin @warn e; true end
+Hazel.update!(l::ExampleLayer) = nothing
+function Hazel.handle!(l::ExampleLayer, e::Hazel.KeyboardEvent{K}) where {K}
+    @warn "$K: \t $(Char(Int64(K)))"
+    true
+end
 Hazel.string(l::ExampleLayer) = l.name
 
 

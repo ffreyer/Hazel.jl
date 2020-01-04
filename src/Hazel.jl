@@ -10,6 +10,12 @@ module Hazel
 
 # sad GUI noises
 
+
+# TODO
+# figure out where to put this
+# I guess it belongs to Inputs, but there is no folder for Inputs...
+include("KeyCodes.jl")
+
 # Events are passed around to notify stuff of other stuff
 include("Events/Events.jl")
 
@@ -19,6 +25,7 @@ include("Layers/Layers.jl")
 # A thing to render on
 using GLFW, ModernGL
 include("Window/Window.jl")
+
 
 # An Application holds everything together
 # TODO
