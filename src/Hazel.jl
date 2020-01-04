@@ -8,6 +8,8 @@ The entrypoint to this module is `AbstractÀpplication`
 """
 module Hazel
 
+# sad GUI noises
+
 # Events are passed around to notify stuff of other stuff
 include("Events/Events.jl")
 
