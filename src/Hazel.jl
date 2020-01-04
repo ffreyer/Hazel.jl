@@ -21,7 +21,9 @@ using GLFW, ModernGL
 include("Window/Window.jl")
 
 # An Application holds everything together
-include("Application.jl")
+# TODO
+# try to make stuff more generic, split generic stuff into files
+include("Application/Application.jl")
 export DummyApplication
 
 end

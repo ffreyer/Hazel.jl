@@ -1,6 +1,7 @@
 abstract type AbstractApplication end
 
 
+include("Inputs.jl")
 
 
 mutable struct DummyApplication <: AbstractApplication
@@ -29,13 +30,16 @@ function renderloop(app::AbstractApplication)
             update!(layer)
         end
 
+        @info "Mouse @ $(mouse_pos(app))"
+
         yield()
     end
     # If we dont cAbstractLayerl GLFW.Destroy.Window after the loop we get a segfault :(
-    destroy(app.window)
+    destroy(window(app))
 end
 
 function Base.run(app::AbstractApplication)
+    app.running = true
     @async renderloop(app)
 end
 
@@ -46,7 +50,7 @@ end
 
 function handle!(app::AbstractApplication, event::AbstractEvent)
     # handle! returns true if the event has been processed
-    handle!(app.window, event) && return true
+    handle!(window(app), event) && return true
 
     for layer in Iterators.reverse(app.layerstack)
         handle!(layer, event) && return true
@@ -70,6 +74,8 @@ end
 function pop_overlay!(app::AbstractApplication, layer::AbstractLayer)
     pop_overlay!(app.layerstack, layer)
 end
+
+window(app::AbstractApplication) = app.window
 
 
 
