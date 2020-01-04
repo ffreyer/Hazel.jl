@@ -1,4 +1,5 @@
-using Revise, Hazel
+using Revise
+using Hazel
 using GLFW
 
 # implement Layer
