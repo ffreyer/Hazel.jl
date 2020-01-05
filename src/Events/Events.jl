@@ -55,8 +55,13 @@ struct WindowMovedEvent <: WindowEvent end
 
 struct KeyPressedEvent{keycode} <: KeyboardEvent{keycode}
     repeat_count::UInt32
+    scancode::Cint
+    mods::UInt8
 end
-struct KeyReleasedEvent{keycode} <: KeyboardEvent{keycode} end
+struct KeyReleasedEvent{keycode} <: KeyboardEvent{keycode}
+    scancode::Cint
+    mods::UInt8
+end
 
 
 struct MouseMovedEvent <: MouseEvent
@@ -67,8 +72,12 @@ struct MouseScrolledEvent <: MouseEvent
     x_shift::Float64
     y_shift::Float64
 end
-struct MouseButtonPressedEvent{button} <: MouseButtonEvent{button} end
-struct MouseButtonReleasedEvent{button} <: MouseButtonEvent{button} end
+struct MouseButtonPressedEvent{button} <: MouseButtonEvent{button}
+    mods::Cint
+end
+struct MouseButtonReleasedEvent{button} <: MouseButtonEvent{button}
+    mods::Cint
+end
 
 """
     handle!(object, event)

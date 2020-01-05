@@ -1,5 +1,6 @@
 mutable struct ImGuiLayer <: AbstractLayer
     context::Ptr{Nothing}
+    glfw_window::GLFW.Window
     ImGuiLayer() = new(C_NULL)
 end
 
@@ -19,8 +20,14 @@ function attach(l::ImGuiLayer, app::AbstractApplication)
     CImGui.StyleColorsDark()
     # style = CImGui.GetStyle()
     glfw_window = native_window(window(app))
-    CImGui.GLFWBackend.ImGui_ImplGlfw_InitForOpenGL(glfw_window, true)
+    l.glfw_window = glfw_window
+    # false because WE give ImGui inputs
+    CImGui.GLFWBackend.ImGui_ImplGlfw_InitForOpenGL(glfw_window, false)
     CImGui.OpenGLBackend.ImGui_ImplOpenGL3_Init(410)
+
+    # :<
+    GLFW.SetCharCallback(glfw_window, CImGui.GLFWBackend.ImGui_ImplGlfw_CharCallback)
+
     nothing
 end
 
@@ -61,6 +68,41 @@ function update!(l::ImGuiLayer)
     render(l)
     End(l)
     nothing
+end
+
+
+# ?CImGui.IsWindowHovered # says
+# You should always pass your mouse/keyboard inputs to imgui
+function handle!(l::ImGuiLayer, e::KeyPressedEvent{key}) where {key}
+    CImGui.GLFWBackend.ImGui_ImplGlfw_KeyCallback(
+        l.glfw_window,
+        key, e.scancode, e.repeat_count == 0 ? GLFW.PRESS : GLFW.REPEAT, e.mods
+    )
+    CImGui.Get_WantCaptureKeyboard(CImGui.GetIO())
+end
+function handle!(l::ImGuiLayer, e::KeyReleasedEvent{key}) where {key}
+    CImGui.GLFWBackend.ImGui_ImplGlfw_KeyCallback(
+        l.glfw_window, key, e.scancode, GLFW.RELEASE, e.mods
+    )
+    CImGui.Get_WantCaptureKeyboard(CImGui.GetIO())
+end
+function handle!(l::ImGuiLayer, e::MouseButtonPressedEvent{button}) where {button}
+    CImGui.GLFWBackend.ImGui_ImplGlfw_MouseButtonCallback(
+        l.glfw_window, button, GLFW.PRESS, e.mods
+    )
+    CImGui.Get_WantCaptureMouse(CImGui.GetIO())
+end
+function handle!(l::ImGuiLayer, e::MouseButtonReleasedEvent{button}) where {button}
+    CImGui.GLFWBackend.ImGui_ImplGlfw_MouseButtonCallback(
+        l.glfw_window, button, GLFW.RELEASE, e.mods
+    )
+    CImGui.Get_WantCaptureMouse(CImGui.GetIO())
+end
+function handle!(l::ImGuiLayer, e::MouseScrolledEvent)
+    CImGui.GLFWBackend.ImGui_ImplGlfw_ScrollCallback(
+        l.glfw_window, e.xshift, e.yshift
+    )
+    CImGui.Get_WantCaptureMouse(CImGui.GetIO()) # NOTE is this right?
 end
 
 Base.string(l::ImGuiLayer) = "ImGuiLayer" # for debug

@@ -34,6 +34,8 @@ include("Layers/Layers.jl")
 using GLFW, ModernGL
 include("Window/Window.jl")
 
+# TODO
+# probably need to call CImGui's callback functions?
 using CImGui
 include("Layers/ImGuiLayer.jl")
 
