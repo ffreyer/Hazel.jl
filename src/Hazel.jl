@@ -13,6 +13,7 @@ abstract type AbstractApplication end
 # Maths
 using LinearAlgebra
 # Stolen from GeometryTypes.jl, adds shorthands like Mat4f0, Vec3, Point2, ...
+# Should we just use GeometryTypes?
 include("FixedSizeArrays.jl")
 # TODO
 # - add Colors.jl?
@@ -32,6 +33,7 @@ include("Layers/Layers.jl")
 
 # A thing to render on
 using GLFW, ModernGL
+include("Renderer/Renderer.jl")
 include("Window/Window.jl")
 
 # TODO

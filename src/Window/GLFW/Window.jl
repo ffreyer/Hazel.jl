@@ -1,8 +1,8 @@
 
 
 # This kinda has to be mutable right? :(
-struct GLFWWindow <: AbstractWindow
-    window::GLFW.Window
+struct GLFWWindow{Context <: AbstractGraphicsContext} <: AbstractWindow
+    context::Context
     properties::WindowProperties
 end
 
@@ -11,8 +11,10 @@ function GLFWWindow(props::WindowProperties, event_callback::Function, vsync=tru
     @info "Creating window $(props.title) ($(props.width), $(props.height))"
 
     glfw_window = GLFW.CreateWindow(props.width, props.height, props.title)
-    GLFW.MakeContextCurrent(glfw_window)
-    window = GLFWWindow(glfw_window, props)
+    context = OpenGLContext(glfw_window)
+    init(context)
+    # ^ GLFW.MakeContextCurrent(glfw_window)
+    window = GLFWWindow(context, props)
     set_vsync(window, vsync)
 
     # Callbacks
@@ -47,7 +49,7 @@ end
 
 function destroy(window::GLFWWindow)
     window.properties.isopen = false
-    GLFW.DestroyWindow(window.window)
+    GLFW.DestroyWindow(native_window(window))
     nothing
 end
 isopen(window::GLFWWindow) = window.properties.isopen
@@ -56,8 +58,8 @@ set_vsync(window::GLFWWindow, on::Bool) = GLFW.SwapInterval(on ? 1 : 0)
 
 function update!(window::GLFWWindow)
     GLFW.PollEvents()
-    GLFW.SwapBuffers(window.window)
+    swap_buffers(window.context)
     nothing
 end
 
-native_window(window::GLFWWindow) = window.window
+@inline native_window(window::GLFWWindow) = native_window(window.context)
