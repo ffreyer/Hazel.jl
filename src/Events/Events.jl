@@ -69,8 +69,8 @@ struct MouseMovedEvent <: MouseEvent
     y::Float64
 end
 struct MouseScrolledEvent <: MouseEvent
-    x_shift::Float64
-    y_shift::Float64
+    dx::Float64
+    dy::Float64
 end
 struct MouseButtonPressedEvent{button} <: MouseButtonEvent{button}
     mods::Cint

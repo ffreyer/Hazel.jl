@@ -99,10 +99,8 @@ function handle!(l::ImGuiLayer, e::MouseButtonReleasedEvent{button}) where {butt
     CImGui.Get_WantCaptureMouse(CImGui.GetIO())
 end
 function handle!(l::ImGuiLayer, e::MouseScrolledEvent)
-    CImGui.GLFWBackend.ImGui_ImplGlfw_ScrollCallback(
-        l.glfw_window, e.xshift, e.yshift
-    )
-    CImGui.Get_WantCaptureMouse(CImGui.GetIO()) # NOTE is this right?
+    CImGui.GLFWBackend.ImGui_ImplGlfw_ScrollCallback(l.glfw_window, e.dx, e.dy)
+    CImGui.Get_WantCaptureMouse(CImGui.GetIO())
 end
 
 Base.string(l::ImGuiLayer) = "ImGuiLayer" # for debug
