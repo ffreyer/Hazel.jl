@@ -12,6 +12,7 @@ mutable struct DummyApplication <: AbstractApplication
     vertex_array::Ref{UInt32}
     vertex_buffer::Ref{UInt32}
     index_buffer::Ref{UInt32}
+    shader::Shader
 
     function DummyApplication()
         @warn "Julia Debugging"
@@ -66,6 +67,31 @@ function init!(app::DummyApplication)
     indices = UInt32[0, 1, 2]
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW)
 
+    vertex_source = """
+    #version 330 core
+
+    layout(location = 0) in vec3 a_position; // a = attributed
+    out vec3 v_position; // v = varying
+
+    void main(){
+        v_position = a_position;
+        gl_Position = vec4(a_position, 1.0);
+    }
+    """
+    fragment_source = """
+    #version 330 core
+
+    layout(location = 0) out vec4 color; // a = attributed
+    in vec3 v_position;
+
+    void main(){
+        //color = vec4(0.8, 0.2, 0.3, 1.0);
+        color = vec4(0.7 * v_position + 0.5, 1.0);
+    }
+    """
+
+    app.shader = Shader(vertex_source, fragment_source)
+
     app
 end
 
@@ -77,6 +103,7 @@ function renderloop(app::AbstractApplication)
         ModernGL.glClear(ModernGL.GL_COLOR_BUFFER_BIT)
 
         # doesn't draw yet
+        bind(app.shader)
         glBindVertexArray(app.vertex_array[])
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, app.index_buffer[])
         glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, C_NULL)

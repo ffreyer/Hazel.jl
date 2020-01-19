@@ -4,3 +4,4 @@ abstract type AbstractGraphicsContext end
 # swap_buffers
 
 include("OpenGLContext.jl")
+include("Shader.jl")
