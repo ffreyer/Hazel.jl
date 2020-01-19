@@ -10,8 +10,8 @@ mutable struct DummyApplication <: AbstractApplication
     layerstack::AbstractLayerStack
 
     vertex_array::Ref{UInt32}
-    vertex_buffer::Ref{UInt32}
-    index_buffer::Ref{UInt32}
+    vertex_buffer::VertexBuffer
+    index_buffer::IndexBuffer
     shader::Shader
 
     function DummyApplication()
@@ -47,25 +47,18 @@ function init!(app::DummyApplication)
     glGenVertexArrays(1, app.vertex_array)
     glBindVertexArray(app.vertex_array[])
 
-    app.vertex_buffer = Ref{UInt32}()
-    glGenBuffers(1, app.vertex_buffer)
-    glBindBuffer(GL_ARRAY_BUFFER, app.vertex_buffer[])
-
     vertices = Float32[
         -0.5, -0.5, 0.0,
          0.5, -0.5, 0.0,
          0.0,  0.5, 0.0
     ]
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW)
+    app.vertex_buffer = VertexBuffer(vertices)
+
     glEnableVertexAttribArray(0)
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3sizeof(Float32), C_NULL)
 
-    app.index_buffer = Ref{UInt32}()
-    glGenBuffers(1, app.index_buffer)
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, app.index_buffer[])
-
     indices = UInt32[0, 1, 2]
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW)
+    app.index_buffer = IndexBuffer(indices)
 
     vertex_source = """
     #version 330 core
@@ -102,10 +95,9 @@ function renderloop(app::AbstractApplication)
         ModernGL.glClearColor(0.1, 0.1, 0.1, 1)
         ModernGL.glClear(ModernGL.GL_COLOR_BUFFER_BIT)
 
-        # doesn't draw yet
         bind(app.shader)
         glBindVertexArray(app.vertex_array[])
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, app.index_buffer[])
+        bind(app.index_buffer)
         glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, C_NULL)
 
 
