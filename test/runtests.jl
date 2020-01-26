@@ -2,5 +2,7 @@ using Hazel
 using Test
 
 @testset "Hazel.jl" begin
-    # Write your own tests here.
+    @testset "Buffers" begin
+        include("Buffers.jl")
+    end
 end

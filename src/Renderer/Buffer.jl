@@ -35,6 +35,7 @@ Used in conjunction with `BufferLayout`. A type `T` wrapped in `Normalized{T}`
 will be normalized on the GPU.
 """
 struct Normalize{T, should} end
+Normalize(T::DataType, normalize=true) = Normalize{T, normalize}
 
 type(::Type{NT}) where {T, NT <: Normalize{T}} = T
 Base.sizeof(::Type{NT}) where {NT <: Normalize} = sizeof(type(NT))
@@ -43,6 +44,10 @@ Base.eltype(::Type{NT}) where {NT <: Normalize} = eltype(type(NT))
 normalized(::Type{NT}) where {T, NT <: Normalize{T, true}} = true
 normalized(::Type{NT}) where {T, NT <: Normalize{T, false}} = false
 normalized(::Type{NT}) where {NT <: Normalize} = true
+
+# TODO: I shouldn't, should I?
+Base.length(::Type{<: Real}) = 1
+Base.length(::Type{<: Complex}) = 2
 
 struct BufferLayoutElement{BL <: BufferLayout}
     layout::BL
@@ -78,14 +83,18 @@ function LazyBufferLayout(pairs::Pair{Symbol, DataType}...)
         Ref{UInt32}()
     )
 end
-function LazyBufferLayout(pairs::Pair{Any, DataType}...)
-    offsets = cumsum([0, (pairs[1:end-1] .|> last .|> sizeof)...])
-    types = map(T -> T <: Normalize ? T : Normalize{T, false}, last.(pairs))
-    LazyBufferLayout{Tuple{types...}, length(pairs)}(
-        tuple(Symbol.(first.(pairs))...),
-        tuple(offsets...),
-        Ref{UInt32}()
-    )
+function LazyBufferLayout(pairs::Pair...)
+    concrete_pairs = Vector{Pair{Symbol, DataType}}(undef, length(pairs))
+    for (i, pair) in enumerate(pairs)
+        k = first(pair) isa Symbol ? first(pair) : Symbol(first(Pair))
+        if (last(pair) <: Normalize) && (last(pair) isa UnionAll)
+            v = last(pair){true}
+        else
+            v = last(pair)
+        end
+        concrete_pairs[i] = k => v
+    end
+    LazyBufferLayout(concrete_pairs...)
 end
 LazyBufferLayout(; kwargs...) = LazyBufferLayout(kwargs...)
 BufferLayout(args...; kwargs...) = LazyBufferLayout(args...; kwargs...)
