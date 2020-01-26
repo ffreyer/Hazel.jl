@@ -47,15 +47,28 @@ function init!(app::DummyApplication)
     glGenVertexArrays(1, app.vertex_array)
     glBindVertexArray(app.vertex_array[])
 
-    vertices = Float32[
-        -0.5, -0.5, 0.0,
-         0.5, -0.5, 0.0,
-         0.0,  0.5, 0.0
-    ]
-    app.vertex_buffer = VertexBuffer(vertices)
 
-    glEnableVertexAttribArray(0)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3sizeof(Float32), C_NULL)
+    vertices = Float32[
+        -0.5, -0.5, 0.0, 0.8, 0.0, 0.8, 1.0,
+         0.5, -0.5, 0.0, 0.8, 0.0, 0.2, 1.0,
+         0.0,  0.5, 0.0, 0.8, 0.8, 0.0, 1.0
+    ]
+    layout = BufferLayout(position = Point3f0, color = Point4f0)
+    app.vertex_buffer = VertexBuffer(vertices, layout)
+
+    for (i, element) in enumerate(layout)
+        glEnableVertexAttribArray(i-1)
+        glVertexAttribPointer(
+            i-1,                            # index of Layout element :: Integer
+            length(element),                # length of layout element :: Integer
+            gltype(eltype(element)),        # element type :: GLEnum (GL_FLOAT)
+            gltype(normalized(element)),    # normalized :: GLEnum (GL_TRUE / GL_FALSE)
+            sizeof(layout),                 # total vertex size :: Integer
+            Ptr{Nothing}(offset(element))   # offset in array :: Pointer? Why not Integer?
+        )
+    end
+
+
 
     indices = UInt32[0, 1, 2]
     app.index_buffer = IndexBuffer(indices)
@@ -64,10 +77,14 @@ function init!(app::DummyApplication)
     #version 330 core
 
     layout(location = 0) in vec3 a_position; // a = attributed
+    layout(location = 1) in vec4 a_color; // a = attributed
+
     out vec3 v_position; // v = varying
+    out vec4 v_color; // v = varying
 
     void main(){
         v_position = a_position;
+        v_color = a_color;
         gl_Position = vec4(a_position, 1.0);
     }
     """
@@ -76,10 +93,11 @@ function init!(app::DummyApplication)
 
     layout(location = 0) out vec4 color; // a = attributed
     in vec3 v_position;
+    in vec4 v_color;
 
     void main(){
         //color = vec4(0.8, 0.2, 0.3, 1.0);
-        color = vec4(0.7 * v_position + 0.5, 1.0);
+        color = v_color;
     }
     """
 
