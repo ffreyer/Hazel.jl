@@ -12,9 +12,10 @@ abstract type AbstractApplication end
 
 # Maths
 using LinearAlgebra
-using GeometryTypes
+using Reexport
+@reexport using GeometryTypes, Colors
 # TODO
-# - add Colors.jl?
+
 # - add Quarternions.jl?
 
 
