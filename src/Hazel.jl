@@ -12,9 +12,7 @@ abstract type AbstractApplication end
 
 # Maths
 using LinearAlgebra
-# Stolen from GeometryTypes.jl, adds shorthands like Mat4f0, Vec3, Point2, ...
-# Should we just use GeometryTypes?
-include("FixedSizeArrays.jl")
+using GeometryTypes
 # TODO
 # - add Colors.jl?
 # - add Quarternions.jl?
