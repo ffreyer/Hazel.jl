@@ -22,6 +22,7 @@ using GeometryTypes
 # figure out where to put this
 # I guess it belongs to Inputs, but there is no folder for Inputs...
 include("KeyCodes.jl")
+include("gl_utils.jl")
 
 # Events are passed around to notify stuff of other stuff
 include("Events/Events.jl")
