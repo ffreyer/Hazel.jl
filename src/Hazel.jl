@@ -15,15 +15,15 @@ using LinearAlgebra
 using Reexport
 @reexport using GeometryTypes, Colors
 # TODO
-
 # - add Quarternions.jl?
 
+# @backend macro
+include("backend_error.jl")
 
 # TODO
 # figure out where to put this
 # I guess it belongs to Inputs, but there is no folder for Inputs...
 include("KeyCodes.jl")
-include("gl_utils.jl")
 
 # Events are passed around to notify stuff of other stuff
 include("Events/Events.jl")
@@ -31,13 +31,18 @@ include("Events/Events.jl")
 # Layers define renderorder
 include("Layers/Layers.jl")
 
-# A thing to render on
-using GLFW, ModernGL
+# Buffers, shaders, etc
 include("Renderer/Renderer.jl")
+
+# A thing to render on
 include("Window/Window.jl")
 
-# TODO
-# probably need to call CImGui's callback functions?
+
+
+using GLFW, ModernGL
+# OpenGL Implementations of stuff
+include("OpenGL/OpenGL.jl")
+
 using CImGui
 include("Layers/ImGuiLayer.jl")
 

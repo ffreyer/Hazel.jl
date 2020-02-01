@@ -1,21 +1,34 @@
-
-
-# This kinda has to be mutable right? :(
-struct GLFWWindow{Context <: AbstractGraphicsContext} <: AbstractWindow
-    context::Context
+struct Window <: AbstractWindow
+    context::OpenGLContext
     properties::WindowProperties
 end
 
-function GLFWWindow(props::WindowProperties, event_callback::Function, vsync=true)
-    # window_data = WindowData(props, vsync)
+
+"""
+    Window(properties::WindowProperties, event_callback::Function[, vsync = true])
+    Window(event_callback::Function[, vsync = true, name = "Hazel Engine", widht=1280, height=720])
+
+Creates a new Window with the give `properties` and event callback function
+`event_callback`.
+
+# Warning
+
+There is explicit cleanup required! Call destroy(window)´ to destroy the window.
+"""
+function Window(
+        event_callback::Function;
+        vsync=true, name="Hazel Window", width=1280, height=720
+    )
+    Window(WindowProperties(name, width, height, true), event_callback, vsync=vsync)
+end
+function Window(props::WindowProperties, event_callback::Function; vsync=true)
     @info "Creating window $(props.title) ($(props.width), $(props.height))"
 
     glfw_window = GLFW.CreateWindow(props.width, props.height, props.title)
     context = OpenGLContext(glfw_window)
-    init(context)
-    # ^ GLFW.MakeContextCurrent(glfw_window)
-    window = GLFWWindow(context, props)
-    set_vsync(window, vsync)
+    init(context) # GLFW.MakeContextCurrent(glfw_window)
+    window = Window(context, props)
+    vsync ? enable_vsync(window) : disable_vsync(window)
 
     # Callbacks
     let
@@ -47,19 +60,20 @@ function GLFWWindow(props::WindowProperties, event_callback::Function, vsync=tru
     window
 end
 
-function destroy(window::GLFWWindow)
+function destroy(window::Window)
     window.properties.isopen = false
     GLFW.DestroyWindow(native_window(window))
     nothing
 end
-isopen(window::GLFWWindow) = window.properties.isopen
-set_vsync(window::GLFWWindow, on::Bool) = GLFW.SwapInterval(on ? 1 : 0)
+isopen(window::Window) = window.properties.isopen
+enable_vsync(window::Window) = GLFW.SwapInterval(1)
+disable_vsync(window::Window) = GLFW.SwapInterval(0)
 
 
-function update!(window::GLFWWindow)
+function update!(window::Window)
     GLFW.PollEvents()
     swap_buffers(window.context)
     nothing
 end
 
-@inline native_window(window::GLFWWindow) = native_window(window.context)
+@inline native_window(window::Window) = native_window(window.context)

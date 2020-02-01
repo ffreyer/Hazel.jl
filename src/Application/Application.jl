@@ -1,26 +1,19 @@
-
-
 include("Inputs.jl")
 
 
 mutable struct DummyApplication <: AbstractApplication
-    window::GLFWWindow
+    window::Window
     running::Bool
     # allow MutableLayerStack -> StaticLayerStack
     layerstack::AbstractLayerStack
 
     vertex_array::VertexArray
-    # vertex_buffer::VertexBuffer
-    # index_buffer::IndexBuffer
     shader::Shader
 
     sq_vertex_array::VertexArray
-    # sq_vertex_buffer::VertexBuffer
-    # sq_index_buffer::IndexBuffer
     sq_shader::Shader
 
     function DummyApplication()
-        @warn "Julia Debugging"
         @info "Application starting up"
         app = new()
         init!(app)
@@ -37,7 +30,7 @@ end
 
 function init!(app::DummyApplication)
     if !isdefined(app, :window) || !isopen(app.window)
-        app.window = GLFWWindow(WindowProperties(), e -> handle!(app, e))
+        app.window = Window(e -> handle!(app, e))
     end
 
     app.running = true

@@ -4,34 +4,73 @@ mutable struct WindowProperties
     width::UInt32
     height::UInt32
     isopen::Bool
+end
 
-    function WindowProperties(
-            title = "Hazel Engine",
-            width = 1280,
-            height = 720,
-            isopen = true
-        )
-        new(title, width, height, isopen)
-    end
+"""
+    WindowProperties()
+
+Creates a `WindowProperties` object, which contains the window title, the
+current width, height and whether the window is currently open.
+
+#### Keyword Arguments:
+- `title = "Hazel Engine"`: The title of the window.
+- `width = 1280`: The width of the window.
+- `height = 720`: The height of the window.
+- `isopen = true`: Whether the window is open.
+"""
+function WindowProperties(;
+        title = "Hazel Engine",
+        width = 1280,
+        height = 720,
+        isopen = true
+    )
+    new(title, width, height, isopen)
 end
 
 
-"""
-    AbstractWindow
-
-Any Widow inheriting from AbstractWindow should implement
-
-- A constructor `Window(title, width, height[, vsync])`
-- A destructor `destroy!(window)`
-- `update!`
-- `set_event_callback`
-- `set_vsync(window, bool)`
-- `get_vsync(window)`
-
-"""
 abstract type AbstractWindow end
 
 
+# Window
 
-include("GLFW/Window.jl")
-include("GLFW/Inputs.jl")
+"""
+    destroy(window)
+
+Destroy the given `window`.
+"""
+@backend destroy(window::AbstractWindow)
+
+"""
+    isopen(window)
+
+Returns true if the window is open.
+"""
+@backend isopen
+
+"""
+    enable_vsync(window)
+
+Enables vsync for the given `window`.
+"""
+@backend enable_vsync
+
+"""
+    disable_vsync(window)
+
+Disables vsync for the given `window`.
+"""
+@backend disable_vsync
+
+"""
+    update!(window)
+
+Updates the given `window`. This includes polling events and swapping buffers.
+"""
+@backend update!
+
+"""
+    native_window(window)
+
+Returns the native window of the given `Window`.
+"""
+@backend native_window
