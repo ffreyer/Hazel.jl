@@ -47,7 +47,6 @@ function init!(app::DummyApplication)
     # create new vertex buffer [OVERWRITES previous vertex array if still bound]
 
 
-    app.vertex_array = VertexArray()
 
     vertices = Float32[
         -0.5, -0.5, 0.0, 0.2, 0.3, 0.8, 1.0,
@@ -56,30 +55,21 @@ function init!(app::DummyApplication)
     ]
     layout = BufferLayout(position = Point3f0, color = Point4f0)
     vertex_buffer = VertexBuffer(vertices, layout)
-    push!(app.vertex_array, vertex_buffer)
-
-    indices = UInt32[0, 1, 2]
-    index_buffer = IndexBuffer(indices)
-    set!(app.vertex_array, index_buffer)
+    index_buffer = IndexBuffer(UInt32[0, 1, 2])
+    app.vertex_array = VertexArray(vertex_buffer, index_buffer)
 
 
     # maybe unbind
-    app.sq_vertex_array = VertexArray()
-
     vertices = Float32[
         -0.75, -0.75, 0.0,
          0.75, -0.75, 0.0,
         -0.75,  0.75, 0.0,
          0.75,  0.75, 0.0
     ]
-
     layout = BufferLayout(position = Point3f0)
     sq_vertex_buffer = VertexBuffer(vertices, layout)
-    push!(app.sq_vertex_array, sq_vertex_buffer)
-
-    indices = UInt32[0, 1, 2, 1, 2, 3]
-    sq_index_buffer = IndexBuffer(indices)
-    set!(app.sq_vertex_array, sq_index_buffer)
+    sq_index_buffer = IndexBuffer(UInt32[0, 1, 2, 1, 2, 3])
+    app.sq_vertex_array = VertexArray(sq_vertex_buffer, sq_index_buffer)
 
 
     vertex_source = """

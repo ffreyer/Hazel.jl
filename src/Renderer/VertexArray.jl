@@ -1,20 +1,16 @@
 abstract type AbstractVertexArray <: AbstractGPUObject end
 
-# TODO
-# This will be changed soon
-@warn "Update VertexArray once you rework it"
+# VertexArray
+"""
+    vertex_buffer(vertex_array)
 
+Returns all vertex buffers connected to the given `vertex_array`.
+"""
+@backend vertex_buffer
 
 """
-    push!(vertex_array, vertex_buffer)
+    index_buffer(vertex_array)
 
-Adds the given `vertex_buffer` to the given `vertex_array`
+Returns the index buffer connected to the given `vertex_array`.
 """
-@backend Base.push!(::AbstractVertexArray, ::AbstractVertexBuffer)
-
-"""
-    set!(vertex_array, index_buffer)
-
-Sets the `index_buffer` of the given `vertex_array`.
-"""
-@backend set!
+@backend index_buffer
