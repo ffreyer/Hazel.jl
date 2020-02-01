@@ -9,10 +9,15 @@ mutable struct DummyApplication <: AbstractApplication
     # allow MutableLayerStack -> StaticLayerStack
     layerstack::AbstractLayerStack
 
-    vertex_array::Ref{UInt32}
-    vertex_buffer::VertexBuffer
-    index_buffer::IndexBuffer
+    vertex_array::VertexArray
+    # vertex_buffer::VertexBuffer
+    # index_buffer::IndexBuffer
     shader::Shader
+
+    sq_vertex_array::VertexArray
+    # sq_vertex_buffer::VertexBuffer
+    # sq_index_buffer::IndexBuffer
+    sq_shader::Shader
 
     function DummyApplication()
         @warn "Julia Debugging"
@@ -41,37 +46,48 @@ function init!(app::DummyApplication)
         app.layerstack = MutableLayerStack()
     end
 
+    # NOTE
+    # If we make VertexArray take a VertexBuffer and IndexBuffer on
+    # creation we kinda need to unbind first.
+    # Otherwise:
+    # create first vertex array [OK]
+    # create new vertex buffer [OVERWRITES previous vertex array if still bound]
 
-    # To be abstracted away later
-    app.vertex_array = Ref{UInt32}()
-    glGenVertexArrays(1, app.vertex_array)
-    glBindVertexArray(app.vertex_array[])
 
+    app.vertex_array = VertexArray()
 
     vertices = Float32[
-        -0.5, -0.5, 0.0, 0.8, 0.0, 0.8, 1.0,
+        -0.5, -0.5, 0.0, 0.2, 0.3, 0.8, 1.0,
          0.5, -0.5, 0.0, 0.8, 0.0, 0.2, 1.0,
          0.0,  0.5, 0.0, 0.8, 0.8, 0.0, 1.0
     ]
     layout = BufferLayout(position = Point3f0, color = Point4f0)
-    app.vertex_buffer = VertexBuffer(vertices, layout)
-
-    for (i, element) in enumerate(layout)
-        glEnableVertexAttribArray(i-1)
-        glVertexAttribPointer(
-            i-1,                            # index of Layout element :: Integer
-            length(element),                # length of layout element :: Integer
-            gltype(eltype(element)),        # element type :: GLEnum (GL_FLOAT)
-            gltype(normalized(element)),    # normalized :: GLEnum (GL_TRUE / GL_FALSE)
-            sizeof(layout),                 # total vertex size :: Integer
-            Ptr{Nothing}(offset(element))   # offset in array :: Pointer? Why not Integer?
-        )
-    end
-
-
+    vertex_buffer = VertexBuffer(vertices, layout)
+    push!(app.vertex_array, vertex_buffer)
 
     indices = UInt32[0, 1, 2]
-    app.index_buffer = IndexBuffer(indices)
+    index_buffer = IndexBuffer(indices)
+    set!(app.vertex_array, index_buffer)
+
+
+    # maybe unbind
+    app.sq_vertex_array = VertexArray()
+
+    vertices = Float32[
+        -0.75, -0.75, 0.0,
+         0.75, -0.75, 0.0,
+        -0.75,  0.75, 0.0,
+         0.75,  0.75, 0.0
+    ]
+
+    layout = BufferLayout(position = Point3f0)
+    sq_vertex_buffer = VertexBuffer(vertices, layout)
+    push!(app.sq_vertex_array, sq_vertex_buffer)
+
+    indices = UInt32[0, 1, 2, 1, 2, 3]
+    sq_index_buffer = IndexBuffer(indices)
+    set!(app.sq_vertex_array, sq_index_buffer)
+
 
     vertex_source = """
     #version 330 core
@@ -103,6 +119,34 @@ function init!(app::DummyApplication)
 
     app.shader = Shader(vertex_source, fragment_source)
 
+
+
+    vertex_source2 = """
+    #version 330 core
+
+    layout(location = 0) in vec3 a_position; // a = attributed
+
+    out vec3 v_position; // v = varying
+
+    void main(){
+        v_position = a_position;
+        gl_Position = vec4(a_position, 1.0);
+    }
+    """
+    fragment_source2 = """
+    #version 330 core
+
+    layout(location = 0) out vec4 color; // a = attributed
+    in vec3 v_position;
+
+    void main(){
+        color = vec4(0.2, 0.3, 0.8, 1.0);
+    }
+    """
+
+    app.sq_shader = Shader(vertex_source2, fragment_source2)
+
+
     app
 end
 
@@ -113,10 +157,25 @@ function renderloop(app::AbstractApplication)
         ModernGL.glClearColor(0.1, 0.1, 0.1, 1)
         ModernGL.glClear(ModernGL.GL_COLOR_BUFFER_BIT)
 
+        bind(app.sq_shader)
+        bind(app.sq_vertex_array)
+        # bind(app.index_buffer)
+        glDrawElements(
+            GL_TRIANGLES,
+            length(index_buffer(app.sq_vertex_array)),
+            GL_UNSIGNED_INT,
+            C_NULL
+        )
+
         bind(app.shader)
-        glBindVertexArray(app.vertex_array[])
-        bind(app.index_buffer)
-        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, C_NULL)
+        bind(app.vertex_array)
+        # bind(app.index_buffer)
+        glDrawElements(
+            GL_TRIANGLES,
+            length(index_buffer(app.vertex_array)),
+            GL_UNSIGNED_INT,
+            C_NULL
+        )
 
 
         # Render layers in order (bottom to top)

@@ -10,3 +10,4 @@ abstract type OpenGL <: RenderAPI end
 include("OpenGLContext.jl")
 include("Buffer.jl")
 include("Shader.jl")
+include("VertexArray.jl")
