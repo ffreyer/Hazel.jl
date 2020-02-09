@@ -136,29 +136,15 @@ end
 
 
 function renderloop(app::AbstractApplication)
+    renderer = Renderer()
     while app.running
-        ModernGL.glClearColor(0.1, 0.1, 0.1, 1)
-        ModernGL.glClear(ModernGL.GL_COLOR_BUFFER_BIT)
+        clear(RenderCommand)
+
 
         bind(app.sq_shader)
-        bind(app.sq_vertex_array)
-        # bind(app.index_buffer)
-        glDrawElements(
-            GL_TRIANGLES,
-            length(index_buffer(app.sq_vertex_array)),
-            GL_UNSIGNED_INT,
-            C_NULL
-        )
-
+        draw_indexed(renderer, app.sq_vertex_array)
         bind(app.shader)
-        bind(app.vertex_array)
-        # bind(app.index_buffer)
-        glDrawElements(
-            GL_TRIANGLES,
-            length(index_buffer(app.vertex_array)),
-            GL_UNSIGNED_INT,
-            C_NULL
-        )
+        draw_indexed(renderer, app.vertex_array)
 
 
         # Render layers in order (bottom to top)

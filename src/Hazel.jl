@@ -32,7 +32,7 @@ include("Events/Events.jl")
 include("Layers/Layers.jl")
 
 # Buffers, shaders, etc
-include("Renderer/Renderer.jl")
+include("Renderer/main.jl")
 
 # A thing to render on
 include("Window/Window.jl")
