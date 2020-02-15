@@ -1,33 +1,3 @@
-"""
-Design:
-- backend callbacks create an AbstractEvent and call `handle!(app, event)`
-- handle!(app, event) propagates to everything else
-
-
-## Type Tree
-
-AbstractEvent
-    ApplicationEvent
-        WindowEvent
-            WindowCloseEvent
-            WindowResizeEvent
-            WindowFocusEvent
-            WindowLostFocusEvent
-            WindowMovedEvent
-        AppTickEvent
-        AppUpdateEvent
-        AppRenderEvent
-    InputEvent
-        KeyboardEvent{keycode}
-            KeyPressedEvent{keycode}
-            KeyReleasedEvent{keycode}
-        MouseEvent
-            MouseButtonEvent{button}
-                MouseButtonPressedEvent{button}
-                MouseButtonReleasedEvent{button}
-            MouseScrolledEvent
-            MouseMovedEvent
-"""
 abstract type AbstractEvent end
 
 abstract type ApplicationEvent <: AbstractEvent end

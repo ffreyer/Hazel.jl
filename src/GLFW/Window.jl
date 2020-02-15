@@ -1,5 +1,5 @@
 struct Window <: AbstractWindow
-    context::OpenGLContext
+    context::GLFWContext
     properties::WindowProperties
 end
 
@@ -25,7 +25,7 @@ function Window(props::WindowProperties, event_callback::Function; vsync=true)
     @info "Creating window $(props.title) ($(props.width), $(props.height))"
 
     glfw_window = GLFW.CreateWindow(props.width, props.height, props.title)
-    context = OpenGLContext(glfw_window)
+    context = GLFWContext(glfw_window)
     init(context) # GLFW.MakeContextCurrent(glfw_window)
     window = Window(context, props)
     vsync ? enable_vsync(window) : disable_vsync(window)

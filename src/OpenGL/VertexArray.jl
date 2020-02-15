@@ -31,7 +31,7 @@ function VertexArray(vertex_buffer::VertexBuffer, index_buffer::IndexBuffer)
                 length(element),                # length of layout element :: Integer
                 gltype(eltype(element)),        # element type :: GLEnum (GL_FLOAT)
                 gltype(normalized(element)),    # normalized :: GLEnum (GL_TRUE / GL_FALSE)
-                sizeof(getlayout(vb)),                 # total vertex size :: Integer
+                sizeof(getlayout(vb)),          # total vertex size :: Integer
                 Ptr{Nothing}(offset(element))   # offset in array :: Pointer? Why not Integer?
             )
         end

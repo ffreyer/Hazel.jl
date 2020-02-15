@@ -1,13 +1,47 @@
 abstract type AbstractLayer end
 
 # Interface
+"""
+    attach(layer, app)
+
+Attached the `layer` to the given `app`. This may include setup with the
+native window or the Graphics backend.
+"""
 attach(l::AbstractLayer, app::AbstractApplication) = @debug "$l does not implement `on_attach`"
+# NOTE Note every layer will need this
+
+"""
+    detach(layer, app)
+
+Detaches the layer from the app.
+"""
 detach(l::AbstractLayer, app::AbstractApplication) = @debug "$l does not implement `on_detach`"
+# NOTE Note every layer will need this
+
+
+"""
+    update!(layer)
+
+Update the `layer`. Typically this means rendering the layer, as this function
+is called once per frame.
+"""
 update!(l::AbstractLayer) = @debug "$l does not implement `update!`"
+# NOTE Note every layer will need this
+
+"""
+    handle!(layer, event)
+
+Handles an event in the given layer. Should return `true` if the event has been
+"consumed", i.e. if the event should not propagate to any more layers. Otherwise
+it should return `false`.
+"""
 function handle!(l::AbstractLayer, event::AbstractEvent)
     @debug "$(name(l)) does not implement `handle!`"
     false
 end
+# NOTE Note every layer will need this
+
+# TODO: Should we really have this?
 Base.string(l::AbstractLayer) = "Unnamed Layer $(typeof(l).name)" # for debug
 
 

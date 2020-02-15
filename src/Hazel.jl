@@ -40,6 +40,9 @@ include("Window/Window.jl")
 
 
 using GLFW, ModernGL
+# Window Implementation (and some event handling)
+include("GLFW/GLFW.jl")
+
 # OpenGL Implementations of stuff
 include("OpenGL/OpenGL.jl")
 
