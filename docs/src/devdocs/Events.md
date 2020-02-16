@@ -20,7 +20,7 @@ Note that events that have been "handled" are not propagated to any other levels
 
 There is a large number of event types that can be used. This, with Julias multiple dispatch, allows for a lot fo control over event handling.
 
-## Event Type Tree
+### Event Type Tree
 
 * AbstractEvent
   * ApplicationEvent

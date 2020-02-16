@@ -5,12 +5,9 @@ This is a pure Julia implementation of the [Hazel Engine](https://github.com/The
 The implementation may heavily vary from the original.
 
 ```@contents
-pages = [
-  "Application.md",
-  "Window.md",
-  "Layers.md",
-  "Events.md",
-  "Renderer.md"
+Pages = [
+  "index.md",
+  "devdocs/index.md"
 ]
-depth=3
+Depth=1
 ```

@@ -2,7 +2,7 @@
 
 The Application is outermost structure, resembling the program as a whole. The current state is very much temporary.
 
-#### Application.jl
+## Application.jl
 
 An `Application` implements
 
@@ -13,7 +13,7 @@ An `Application` implements
 * `push!(app, layer)`, `push_overlay!(app, layer)`, `pop!(app, layer)`, `pop_overlay!(app, layer)`: See [Layers](@ref)
 * `window(app)`: Returns the active window of the application. See also [Window](@ref)
 
-#### Inputs.jl
+## Inputs.jl
 
 Currently implements some methods for retrieving input events, i.e.
 

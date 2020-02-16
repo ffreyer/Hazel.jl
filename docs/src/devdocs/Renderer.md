@@ -2,7 +2,7 @@
 
 The directory "src/Renderer" contains mostly interface functions and descriptions. See [OpenGL](@ref) for more details.
 
-## Renderer
+## Renderer.jl
 
 Renderer is is the exposed rendering api of Hazel. It interfaces with `RenderCommand`.
 
@@ -25,7 +25,7 @@ unbind
 destroy(::AbstractGPUObject)
 ```
 
-## VertexArray
+## VertexArray.jl
 
 A `VertexArray` is a GPUObject containing a vertex buffer and an index buffer. On top the `AbstractGPUObject` methods, it implements
 
@@ -35,7 +35,7 @@ vertex_buffer
 index_buffer
 ```
 
-## Buffer
+## Buffer.jl
 
 ### VertexBuffer
 
@@ -77,7 +77,7 @@ Internally, the BufferLayout are iterated when creating a vertex array. Iteratio
 * `offset`: The offset of the vertex attribute (0-based)
 
 
-## Shader
+## Shader.jl
 
 A `Shader` inherits from `AbstractGPUObject` and specifies a ... Shader.
 
@@ -85,7 +85,7 @@ A `Shader` inherits from `AbstractGPUObject` and specifies a ... Shader.
 Shader
 ```
 
-## GraphicsContext
+## GraphicsContext.jl
 
 A `GraphicsContext` wraps the native window and implements
 
