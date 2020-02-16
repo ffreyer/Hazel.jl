@@ -15,7 +15,9 @@ makedocs(
             "devdocs/Window.md",
             "devdocs/Layers.md",
             "devdocs/Events.md",
-            "devdocs/Renderer.md"
+            "devdocs/Renderer.md",
+            "devdocs/OpenGL.md",
+            "devdocs/GLFW.md"
         ]
     ]
 )

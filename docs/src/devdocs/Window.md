@@ -21,4 +21,4 @@ update!(window::AbstractWindow)
 native_window(window::AbstractWindow)
 ```
 
-More on the implementation in GLFW(...)
+More on the implementation in [GLFW](@ref)

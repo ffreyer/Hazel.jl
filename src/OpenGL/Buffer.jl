@@ -32,7 +32,7 @@ end
 bind(buffer::VertexBuffer) = glBindBuffer(GL_ARRAY_BUFFER, buffer.id[])
 unbind(buffer::VertexBuffer) = glBindBuffer(GL_ARRAY_BUFFER, 0)
 destroy(buffer::VertexBuffer) = glDeleteBuffers(1, buffer.id)
-getlayout(vb::VertexBuffer) = vb.layout
+layout(vb::VertexBuffer) = vb.layout
 
 
 ################################################################################
