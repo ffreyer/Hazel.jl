@@ -16,7 +16,7 @@ jobs:
         with:
           version: ${{ matrix.julia-version }}
       - name: Install GLFW dependencies
-        run: apt-get -qq update; apt-get install -y cmake xorg-dev mesa-utils p7zip-full
+        run: sudo apt-get -qq update; sudo apt-get install -y cmake xorg-dev mesa-utils p7zip-full
       - name: Install dependencies
         run: julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
       - name: Build and deploy
