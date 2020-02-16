@@ -12,12 +12,12 @@ jobs:
         os: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v1.0.0
+      - name: Install GLFW dependencies
+        run: sudo apt-get -qq update; sudo apt-get install -y cmake xorg-dev mesa-utils p7zip-full
       - uses: julia-actions/setup-julia@latest
         with:
           version: ${{ matrix.julia-version }}
-      - name: Install GLFW dependencies
-        run: sudo apt-get -qq update; sudo apt-get install -y cmake xorg-dev mesa-utils p7zip-full
-      - name: Install dependencies
+      - name: Install Julia dependencies
         run: julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
       - name: Build and deploy
         env:
