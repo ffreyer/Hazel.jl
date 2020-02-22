@@ -17,11 +17,11 @@ abstract type BufferLayout end
 
 
 """
-    getlayout(vertex_buffer)
+    layout(vertex_buffer)
 
 Returns the layout attached to the given `vertex_buffer`
 """
-@backend getlayout
+@backend layout
 
 
 ################################################################################
