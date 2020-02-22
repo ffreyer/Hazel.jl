@@ -32,7 +32,21 @@ end
 
 Draw a given `vertex_array`.
 """
-function draw_indexed(r::Renderer, va::T) where {T <: AbstractVertexArray}
+function draw_indexed(r::Renderer, va::AbstractVertexArray)
     bind(va)
     draw_indexed(r.rc, va)
+end
+
+"""
+    submit(::Renderer, scene)
+
+Draw a given `scene`.
+"""
+function submit(r::Renderer, scene::AbstractScene)
+    for robj in scene.render_objects
+        bind(robj.shader)
+        bind(robj.vertex_array)
+        upload!(robj.shader, u_projection_view = projection_view(scene.camera))
+        draw_indexed(r.rc, robj.vertex_array)
+    end
 end

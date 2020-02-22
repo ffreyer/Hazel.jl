@@ -37,6 +37,8 @@ Cleans up the given `gpu_object`.
 # You can't create a type `T` if you define `T()` beforehand
 # So some of these files are kinda sorry
 
+# TODO move this down the list?
+include("Camera/Camera.jl")
 
 include("GraphicsContext.jl")
 
@@ -51,4 +53,5 @@ include("Shader.jl")
 include("VertexArray.jl")
 
 # "high"-level Renderer implementation
+include("Scene.jl")
 include("Renderer.jl")

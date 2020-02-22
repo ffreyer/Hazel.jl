@@ -7,11 +7,8 @@ mutable struct DummyApplication <: AbstractApplication
     # allow MutableLayerStack -> StaticLayerStack
     layerstack::AbstractLayerStack
 
-    vertex_array::VertexArray
-    shader::Shader
-
-    sq_vertex_array::VertexArray
-    sq_shader::Shader
+    # These should eventually go into Layers?
+    scene::AbstractScene
 
     function DummyApplication()
         @info "Application starting up"
@@ -46,7 +43,7 @@ function init!(app::DummyApplication)
     # create first vertex array [OK]
     # create new vertex buffer [OVERWRITES previous vertex array if still bound]
 
-
+    app.scene = Scene(OrthographicCamera(-1.6f0, 1.6f0, -0.9f0, 0.9f0))
 
     vertices = Float32[
         -0.5, -0.5, 0.0, 0.2, 0.3, 0.8, 1.0,
@@ -56,20 +53,6 @@ function init!(app::DummyApplication)
     layout = BufferLayout(position = Point3f0, color = Point4f0)
     vertex_buffer = VertexBuffer(vertices, layout)
     index_buffer = IndexBuffer(UInt32[0, 1, 2])
-    app.vertex_array = VertexArray(vertex_buffer, index_buffer)
-
-
-    # maybe unbind
-    vertices = Float32[
-        -0.75, -0.75, 0.0,
-         0.75, -0.75, 0.0,
-        -0.75,  0.75, 0.0,
-         0.75,  0.75, 0.0
-    ]
-    layout = BufferLayout(position = Point3f0)
-    sq_vertex_buffer = VertexBuffer(vertices, layout)
-    sq_index_buffer = IndexBuffer(UInt32[0, 1, 2, 1, 2, 3])
-    app.sq_vertex_array = VertexArray(sq_vertex_buffer, sq_index_buffer)
 
 
     vertex_source = """
@@ -78,13 +61,15 @@ function init!(app::DummyApplication)
     layout(location = 0) in vec3 a_position; // a = attributed
     layout(location = 1) in vec4 a_color; // a = attributed
 
+    uniform mat4 u_projection_view;
+
     out vec3 v_position; // v = varying
     out vec4 v_color; // v = varying
 
     void main(){
         v_position = a_position;
         v_color = a_color;
-        gl_Position = vec4(a_position, 1.0);
+        gl_Position = u_projection_view * vec4(a_position, 1.0);
     }
     """
     fragment_source = """
@@ -100,8 +85,23 @@ function init!(app::DummyApplication)
     }
     """
 
-    app.shader = Shader(vertex_source, fragment_source)
+    push!(app.scene, RenderObject(
+        Shader(vertex_source, fragment_source),
+        VertexArray(vertex_buffer, index_buffer)
+    ))
 
+
+
+    # maybe unbind
+    vertices = Float32[
+        -0.75, -0.75, 0.0,
+         0.75, -0.75, 0.0,
+        -0.75,  0.75, 0.0,
+         0.75,  0.75, 0.0
+    ]
+    layout = BufferLayout(position = Point3f0)
+    sq_vertex_buffer = VertexBuffer(vertices, layout)
+    sq_index_buffer = IndexBuffer(UInt32[0, 1, 2, 1, 2, 3])
 
 
     vertex_source2 = """
@@ -109,11 +109,13 @@ function init!(app::DummyApplication)
 
     layout(location = 0) in vec3 a_position; // a = attributed
 
+    uniform mat4 u_projection_view;
+
     out vec3 v_position; // v = varying
 
     void main(){
         v_position = a_position;
-        gl_Position = vec4(a_position, 1.0);
+        gl_Position = u_projection_view * vec4(a_position, 1.0);
     }
     """
     fragment_source2 = """
@@ -127,8 +129,17 @@ function init!(app::DummyApplication)
     }
     """
 
-    app.sq_shader = Shader(vertex_source2, fragment_source2)
+    push!(app.scene, RenderObject(
+        Shader(vertex_source2, fragment_source2),
+        VertexArray(sq_vertex_buffer, sq_index_buffer)
+    ))
 
+    # Fix render order
+    reverse!(app.scene.render_objects)
+
+    # Test camera updates
+    moveto!(app.scene.camera, Vec3f0(0.25, 0.25, 0.0))
+    rotateto!(app.scene.camera, Float32(30/360*2pi))
 
     app
 end
@@ -140,11 +151,7 @@ function renderloop(app::AbstractApplication)
     while app.running
         clear(RenderCommand)
 
-
-        bind(app.sq_shader)
-        draw_indexed(renderer, app.sq_vertex_array)
-        bind(app.shader)
-        draw_indexed(renderer, app.vertex_array)
+        submit(renderer, app.scene)
 
 
         # Render layers in order (bottom to top)

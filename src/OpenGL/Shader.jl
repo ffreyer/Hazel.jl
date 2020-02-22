@@ -136,3 +136,19 @@ end
 destroy(shader::Shader) = glDeleteProgram(shader.id[])
 bind(shader::Shader) = glUseProgram(shader.id[])
 unbind(shader::Shader) = glUseProgram(0)
+
+
+function upload!(shader::Shader; kwargs...)
+    for (k, v) in kwargs
+        upload!(shader, k, v)
+    end
+end
+upload!(shader::Shader, name::Symbol, v) = upload!(shader, string(name), v)
+function upload!(shader::Shader, name::String, v)
+    location = glGetUniformLocation(shader.id[], name)
+    location == -1 && throw(ErrorException("$name is not a valid uniform name!"))
+    _upload!(shader, location, v)
+end
+function _upload!(shader::Shader, location, matrix::Mat4f0)
+    glUniformMatrix4fv(location, 1, GL_FALSE, matrix)
+end
