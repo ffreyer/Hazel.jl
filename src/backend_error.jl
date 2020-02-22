@@ -1,5 +1,6 @@
 struct MissingBackendException
     name::Symbol
+    MissingBackendException(x) = new(Symbol(x))
 end
 
 function Base.showerror(io::IO, ex::MissingBackendException)
