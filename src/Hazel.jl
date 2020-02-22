@@ -14,8 +14,10 @@ abstract type AbstractApplication end
 using LinearAlgebra
 using Reexport
 @reexport using GeometryTypes, Colors
-# TODO
-# - add Quarternions.jl?
+using StaticArrays, Quaternions
+
+# projection stuff
+include("math/math.jl")
 
 # @backend macro
 include("backend_error.jl")
