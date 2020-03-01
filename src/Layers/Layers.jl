@@ -41,6 +41,19 @@ function handle!(l::AbstractLayer, event::AbstractEvent)
 end
 # NOTE Note every layer will need this
 
+"""
+    destroy(layer)
+
+Destroy all rendering components a given `layer`.
+"""
+function destroy(l::AbstractLayer)
+    @debug "destroy($(typeof(l))) not implemented"
+    nothing
+end
+# NOTE Note every layer will need this
+
+
+
 # TODO: Should we really have this?
 Base.string(l::AbstractLayer) = "Unnamed Layer $(typeof(l).name)" # for debug
 

@@ -52,6 +52,7 @@ function renderloop(app::AbstractApplication)
         yield()
     end
     yield()
+    destroy.(app.layerstack)
     empty!(app.layerstack, app)
     # If we dont call GLFW.DestroyWindow after the loop we get a segfault :(
     destroy(window(app))

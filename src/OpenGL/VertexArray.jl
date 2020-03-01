@@ -42,6 +42,10 @@ function VertexArray(vertex_buffer::VertexBuffer, index_buffer::IndexBuffer)
 end
 bind(va::VertexArray) = glBindVertexArray(va.id[])
 unbind(va::VertexArray) = glBindVertexArray(0)
-destroy(va::VertexArray) = glDeleteVertexArrays(1, va.id)
+function destroy(va::VertexArray)
+    glDeleteVertexArrays(1, va.id)
+    destroy(va.vb)
+    destroy(va.ib)
+end
 vertex_buffer(va::VertexArray) = va.vb
 index_buffer(va::VertexArray) = va.ib

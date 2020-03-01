@@ -172,6 +172,7 @@ end
 #     l.cam_pos[2] -= l.cam_speed
 #     true
 # end
+Hazel.destroy(l::ExampleLayer) = Hazel.destroy(l.scene)
 Hazel.string(l::ExampleLayer) = l.name
 
 

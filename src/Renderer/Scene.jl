@@ -28,6 +28,12 @@ function unbind(r::RenderObject)
     unbind(r.shader)
     unbind(r.vertex_array)
 end
+function destroy(r::RenderObject)
+    # TODO this is dangerous!
+    # Shaders may be reused...
+    destroy(r.shader)
+    destroy(r.vertex_array)
+end
 
 
 abstract type AbstractScene end
@@ -42,6 +48,7 @@ end
 """
 Scene(camera::AbstractCamera) = Scene(camera, RenderObject[])
 Base.push!(scene::Scene, robj::RenderObject) = push!(scene.render_objects, robj)
+destroy(scene::Scene) = destroy.(scene.render_objects)
 
 camera(scene::Scene) = scene.camera
 
