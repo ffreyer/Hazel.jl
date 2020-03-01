@@ -18,7 +18,7 @@ function OrthographicCamera(
     position = Vec3{T}(0)
     rotation = T(0)
     projection = orthographicprojection(left, right, bottom, top, znear, zfar)
-    view = rotationmatrix_z(-rotation) * translationmatrix(-position)
+    view = rotationmatrix_z(-rotation) * translationmatrix(position)
     projection_view = projection * view
     OrthographicCamera(position, rotation, projection, view, projection_view)
 end
@@ -29,7 +29,7 @@ end
 function recalculate_view!(cam::OrthographicCamera)
     cam.view =
         rotationmatrix_z(-cam.rotation) *
-        translationmatrix(-cam.position)
+        translationmatrix(cam.position)
     recalculate!(cam)
 end
 
@@ -37,7 +37,7 @@ end
 """
     moveto!(camera, position)
 
-Moves the cemra to a given position
+Moves the camera to a given position
 """
 function moveto!(cam::OrthographicCamera{T}, pos::Point3{T}) where {T}
     moveto!(cam, Vec{3, T}(pos))
@@ -46,6 +46,20 @@ function moveto!(cam::OrthographicCamera{T}, pos::Vec3{T}) where {T}
     cam.position = pos
     recalculate_view!(cam)
     pos
+end
+
+"""
+    moveby!(camera, offset)
+
+Moves the camera by a given offset
+"""
+function moveby!(cam::OrthographicCamera{T}, offset::Point3{T}) where {T}
+    moveby!(cam, Vec{3, T}(offset))
+end
+function moveby!(cam::OrthographicCamera{T}, offset::Vec3{T}) where {T}
+    cam.position = cam.position + offset
+    recalculate_view!(cam)
+    cam.position
 end
 
 """
@@ -65,6 +79,16 @@ function rotateto!(cam::OrthographicCamera{T}, angle::T) where {T}
     cam.rotation = angle
     recalculate_view!(cam)
     angle
+end
+"""
+    rotateby!(camera, angle)
+
+Rotates the camera by a given angle.
+"""
+function rotateby!(cam::OrthographicCamera{T}, angle::T) where {T}
+    cam.rotation += angle
+    recalculate_view!(cam)
+    cam.rotation
 end
 """
     rotation(camera)

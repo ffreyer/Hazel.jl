@@ -1,10 +1,10 @@
 function keypressed(window::Window, keycode)
-    GLFW.GetKey(native_window(window), keycode) in (GLFW.PRESS, GLFW.REPEAT)
+    GLFW.GetKey(native_window(window), Cint(keycode))
 end
 
 function mousebutton_pressed(window::Window, button)
     glfw_window = native_window(window)
-    GLFW.GetMouseButton(glfw_window, button) == GLFW.PRESS
+    GLFW.GetMouseButton(glfw_window, button)
 end
 
 mouse_x(window::Window) = mouse_pos(window)[1]

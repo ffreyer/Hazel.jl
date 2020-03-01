@@ -44,8 +44,7 @@ Draw a given `scene`.
 """
 function submit(r::Renderer, scene::AbstractScene)
     for robj in scene.render_objects
-        bind(robj.shader)
-        bind(robj.vertex_array)
+        bind(robj)
         upload!(robj.shader, u_projection_view = projection_view(scene.camera))
         draw_indexed(r.rc, robj.vertex_array)
     end

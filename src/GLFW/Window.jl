@@ -38,18 +38,18 @@ function Window(props::WindowProperties, event_callback::Function; vsync=true)
         GLFW.SetWindowCloseCallback(glfw_w, _ -> ec(WindowCloseEvent()))
         GLFW.SetKeyCallback(glfw_w, (_, key, scancode, action, mods) -> begin
             if action == GLFW.PRESS
-                ec(KeyPressedEvent{key}(0, scancode, mods))
+                ec(KeyPressedEvent{Key(key)}(0, scancode, mods))
             elseif action == GLFW.REPEAT
-                ec(KeyPressedEvent{key}(1, scancode, mods))
+                ec(KeyPressedEvent{Key(key)}(1, scancode, mods))
             elseif action == GLFW.RELEASE
-                ec(KeyReleasedEvent{key}(scancode, mods))
+                ec(KeyReleasedEvent{Key(key)}(scancode, mods))
             end
         end)
         GLFW.SetMouseButtonCallback(glfw_w, (_, button, action, mods) -> begin
             if action == GLFW.PRESS
-                ec(MouseButtonPressedEvent{button}(mods))
+                ec(MouseButtonPressedEvent{MouseButton(button)}(mods))
             elseif action == GLFW.RELEASE
-                ec(MouseButtonReleasedEvent{button}(mods))
+                ec(MouseButtonReleasedEvent{MouseButton(button)}(mods))
             end
         end)
         GLFW.SetScrollCallback(glfw_w, (_, dx, dy) -> ec(MouseScrolledEvent(dx, dy)))
