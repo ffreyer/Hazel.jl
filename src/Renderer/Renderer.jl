@@ -28,16 +28,6 @@ struct Renderer{T <: AbstractRenderCommand}
 end
 
 """
-    draw_indexed(::Renderer, vertex_array)
-
-Draw a given `vertex_array`.
-"""
-function draw_indexed(r::Renderer, va::AbstractVertexArray)
-    bind(va)
-    draw_indexed(r.rc, va)
-end
-
-"""
     submit(::Renderer, scene)
 
 Draw a given `scene`.

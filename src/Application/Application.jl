@@ -1,16 +1,16 @@
 include("Inputs.jl")
 
 
-mutable struct DummyApplication <: AbstractApplication
+mutable struct BasicApplication <: AbstractApplication
     window::Window
     running::Bool
     # allow MutableLayerStack -> StaticLayerStack
     layerstack::AbstractLayerStack
 end
-function DummyApplication()
+function BasicApplication()
     @info "Application starting up"
 
-    app = DummyApplication(
+    app = BasicApplication(
         Window(e -> handle!(app, e)),
         true,
         MutableLayerStack()
@@ -26,7 +26,7 @@ function DummyApplication()
 end
 
 
-function init!(app::DummyApplication)
+function init!(app::BasicApplication)
     if !isdefined(app, :window) || !isopen(app.window)
         app.window = Window(e -> handle!(app, e))
     end

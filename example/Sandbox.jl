@@ -123,7 +123,7 @@ function ExampleLayer(name::String = "Example")
     ))
 
     ExampleLayer(
-        Ref{Hazel.DummyApplication}(),
+        Ref{Hazel.BasicApplication}(),
         name, Hazel.Renderer(), scene,
         camera, 0.01f0, 0.05f0
     )
@@ -175,6 +175,6 @@ end
 Hazel.string(l::ExampleLayer) = l.name
 
 
-app = DummyApplication()
+app = Hazel.BasicApplication()
 push!(app, ExampleLayer())
 run(app)
