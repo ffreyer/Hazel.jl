@@ -39,9 +39,10 @@ end
 
 Moves the camera to a given position
 """
-function moveto!(cam::OrthographicCamera{T}, pos::Point3{T}) where {T}
+function moveto!(cam::OrthographicCamera{T}, pos::Point3) where {T}
     moveto!(cam, Vec{3, T}(pos))
 end
+moveto!(cam::OrthographicCamera{T}, pos::Vec3) where {T} = moveto!(cam, Vec{3, T}(pos))
 function moveto!(cam::OrthographicCamera{T}, pos::Vec3{T}) where {T}
     cam.position = pos
     recalculate_view!(cam)
@@ -53,9 +54,10 @@ end
 
 Moves the camera by a given offset
 """
-function moveby!(cam::OrthographicCamera{T}, offset::Point3{T}) where {T}
+function moveby!(cam::OrthographicCamera{T}, offset::Point3) where {T}
     moveby!(cam, Vec{3, T}(offset))
 end
+moveby!(cam::OrthographicCamera{T}, offset::Vec3) where {T} = moveby!(cam, Vec{3, T}(offset))
 function moveby!(cam::OrthographicCamera{T}, offset::Vec3{T}) where {T}
     cam.position = cam.position + offset
     recalculate_view!(cam)
@@ -75,6 +77,7 @@ position(cam::OrthographicCamera) = cam.position
 
 Rotates the camera to the given angle.
 """
+rotateto!(cam::OrthographicCamera{T}, angle) where {T} = rotateto!(cam, T(angle))
 function rotateto!(cam::OrthographicCamera{T}, angle::T) where {T}
     cam.rotation = angle
     recalculate_view!(cam)
@@ -85,6 +88,7 @@ end
 
 Rotates the camera by a given angle.
 """
+rotateby!(cam::OrthographicCamera{T}, angle) where {T} = rotateby!(cam, T(angle))
 function rotateby!(cam::OrthographicCamera{T}, angle::T) where {T}
     cam.rotation += angle
     recalculate_view!(cam)

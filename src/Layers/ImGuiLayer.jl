@@ -62,7 +62,7 @@ function End(l::ImGuiLayer)
     nothing
 end
 
-function update!(l::ImGuiLayer)
+function update!(l::ImGuiLayer, dt)
     # @warn "Update ImGuiLayer"
     Begin(l)
     render(l)

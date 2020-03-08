@@ -41,13 +41,18 @@ end
 
 function renderloop(app::AbstractApplication)
     renderer = Renderer()
+    t = time()
     while app.running
+        new_t = time()
+        dt = new_t - t
+        t = new_t
+
         # Render layers in order (bottom to top)
         for layer in app.layerstack
-            update!(layer)
+            update!(layer, dt)
         end
 
-        update!(app.window)
+        update!(app.window, dt)
 
         yield()
     end

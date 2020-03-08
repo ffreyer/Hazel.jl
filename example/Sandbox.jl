@@ -125,7 +125,7 @@ function ExampleLayer(name::String = "Example")
     ExampleLayer(
         Ref{Hazel.BasicApplication}(),
         name, Hazel.Renderer(), scene,
-        camera, 0.01f0, 0.05f0
+        camera, 0.5f0, 1f0
     )
 end
 
@@ -134,7 +134,7 @@ function Hazel.attach(l::ExampleLayer, app::Hazel.AbstractApplication)
     l.app[] = app
 end
 
-function Hazel.update!(l::ExampleLayer)
+function Hazel.update!(l::ExampleLayer, dt)
     app = l.app[]
 
     offset = Vec3f0(
@@ -144,11 +144,11 @@ function Hazel.update!(l::ExampleLayer)
             Hazel.keypressed(app, Hazel.KEY_DOWN) * l.cam_translation_speed,
         0
     )
-    Hazel.moveby!(l.camera, offset)
+    Hazel.moveby!(l.camera, dt * offset)
     rotation =
         Hazel.keypressed(app, Hazel.KEY_D) * l.cam_rotation_speed -
         Hazel.keypressed(app, Hazel.KEY_A) * l.cam_rotation_speed
-    Hazel.rotateby!(l.camera, rotation)
+    Hazel.rotateby!(l.camera, dt * rotation)
 
     Hazel.clear(Hazel.RenderCommand)
     Hazel.submit(l.renderer, l.scene)
@@ -178,4 +178,4 @@ Hazel.string(l::ExampleLayer) = l.name
 
 app = Hazel.BasicApplication()
 push!(app, ExampleLayer())
-run(app)
+task = run(app)
