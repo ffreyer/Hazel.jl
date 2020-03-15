@@ -139,7 +139,7 @@ function ExampleLayer(name::String = "Example")
 
     ExampleLayer(
         Ref{Hazel.BasicApplication}(),
-        name, Hazel.Renderer(), Hazel.Scene(camera, [square_robj, triangle_robj]),
+        name, Hazel.Renderer(), Hazel.Scene(camera, square_robj, triangle_robj),
         square_robj, triangle_robj,
         camera, 1f0, 1f0,
         Float32[0, 0, 0], 0.1f0
