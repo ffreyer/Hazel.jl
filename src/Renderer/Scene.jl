@@ -47,6 +47,7 @@ end
     Scene(camera[, render_objects])
 """
 Scene(camera::AbstractCamera) = Scene(camera, RenderObject[])
+Scene(camera::AbstractCamera, robjs::RenderObject...) = Scene(camera, RenderObject[robjs...])
 Base.push!(scene::Scene, robj::RenderObject) = push!(scene.render_objects, robj)
 destroy(scene::Scene) = destroy.(scene.render_objects)
 

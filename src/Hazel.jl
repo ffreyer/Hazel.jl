@@ -52,12 +52,12 @@ export push_overlay!, pop_overlay!
 include("Renderer/main.jl")
 export AbstractCamera, OrthographicCamera
 export moveto!, moveby!, position, rotateto!, rotateby!, rotation
-# projection, view, projection_view # Should these be exported?
+# export projection, view, projection_view # Should these be exported?
 export AbstractGPUObject, AbstractGPUBuffer, bind, unbind
 export AbstractVertexBuffer, layout, AbstractIndexBuffer
 export BufferLayout, Normalize
-#export offsets, types, name, offset, type, elsizeof, normalized # needed?
-#export GraphicsContext, init, swap_buffers, native_window
+# export offsets, types, name, offset, type, elsizeof, normalized # needed?
+# export GraphicsContext, init, swap_buffers, native_window
 export Renderer, submit
 # export clear, draw_indexed
 export RenderObject, Scene, camera

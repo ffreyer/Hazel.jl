@@ -28,14 +28,28 @@ struct Renderer{T <: AbstractRenderCommand}
 end
 
 """
-    submit(::Renderer, scene)
+    submit(::Renderer, scene[, transform = I])
 
 Draw a given `scene`.
 """
-function submit(r::Renderer, scene::AbstractScene)
+function submit(r::Renderer, scene::AbstractScene, transform::Mat4f0 = Mat4f0(I))
     for robj in scene.render_objects
-        bind(robj)
-        upload!(robj.shader, u_projection_view = projection_view(scene.camera))
-        draw_indexed(r.rc, robj.vertex_array)
+        submit(r, robj, projection_view(scene.camera), transform)
     end
+end
+
+
+"""
+    submit(::Renderer, render_object[, transform = I])
+
+Draw a given `render_object`.
+"""
+function submit(
+        r::Renderer, robj::RenderObject,
+        projection_view = Mat4f0(I), transform::Mat4f0 = Mat4f0(I)
+    )
+    bind(robj)
+    upload!(robj.shader, u_projection_view = projection_view)
+    upload!(robj.shader, u_transform = transform) # transform
+    draw_indexed(r.rc, robj.vertex_array)
 end
