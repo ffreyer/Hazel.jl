@@ -152,3 +152,6 @@ end
 function _upload!(shader::Shader, location, matrix::Mat4f0)
     glUniformMatrix4fv(location, 1, GL_FALSE, matrix)
 end
+function _upload!(shader::Shader, location, vec::Vec4f0)
+    glUniform4f(location, vec...)
+end

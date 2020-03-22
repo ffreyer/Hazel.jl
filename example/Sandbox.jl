@@ -45,7 +45,7 @@ function ExampleLayer(name::String = "Example")
     index_buffer = Hazel.IndexBuffer(UInt32[0, 1, 2, 1, 2, 3])
 
     # Basic shader that takes positions and a matrix to draw
-    # a constant color object
+    # a flat color object
     vertex_source = """
     #version 330 core
 
@@ -65,10 +65,11 @@ function ExampleLayer(name::String = "Example")
     #version 330 core
 
     layout(location = 0) out vec4 color; // a = attributed
+    uniform vec4 u_color;
     in vec3 v_position;
 
     void main(){
-        color = vec4(0.2, 0.3, 0.8, 1.0);
+        color = u_color;
     }
     """
 
@@ -180,12 +181,25 @@ function Hazel.update!(l::ExampleLayer, dt)
     l.square_position .+= offset
     scale = Hazel.scalematrix(Vec3f0(0.1))
 
+    cblue = Hazel.Vec4f0(0.2, 0.3, 0.8, 1.0)
+    cred = Hazel.Vec4f0(0.8, 0.2, 0.3, 1.0)
+
+    # material = Hazel.Material(flat_color_shader)
+    # mi = MaterialInstance(material)
+    # color!(mi, u_color = cred)
+    # apply!(square_mesh, mi)
+
     Hazel.clear(Hazel.RenderCommand)
     # Hazel.submit(l.renderer, l.scene)
     for x in -10:10
         for y in -10:10
             pos = Vec3f0(l.square_position) + Vec3f0(0.11f0*x, 0.11f0*y, 0f0)
             transform = Hazel.translationmatrix(pos) * scale
+            if iseven(x)
+                Hazel.upload!(l.square_robj.shader, u_color = cblue)
+            else
+                Hazel.upload!(l.square_robj.shader, u_color = cred)
+            end
             Hazel.submit(l.renderer, l.square_robj, Hazel.projection_view(l.camera), transform)
         end
     end
@@ -194,22 +208,7 @@ function Hazel.update!(l::ExampleLayer, dt)
 end
 
 
-# function Hazel.handle!(l::ExampleLayer, e::Hazel.KeyboardEvent{Hazel.KEY_LEFT})
-#     l.cam_pos[1] += l.cam_speed
-#     true
-# end
-# function Hazel.handle!(l::ExampleLayer, e::Hazel.KeyboardEvent{Hazel.KEY_RIGHT})
-#     l.cam_pos[1] -= l.cam_speed
-#     true
-# end
-# function Hazel.handle!(l::ExampleLayer, e::Hazel.KeyboardEvent{Hazel.KEY_DOWN})
-#     l.cam_pos[2] += l.cam_speed
-#     true
-# end
-# function Hazel.handle!(l::ExampleLayer, e::Hazel.KeyboardEvent{Hazel.KEY_UP})
-#     l.cam_pos[2] -= l.cam_speed
-#     true
-# end
+
 Hazel.destroy(l::ExampleLayer) = Hazel.destroy(l.scene)
 Hazel.string(l::ExampleLayer) = l.name
 
