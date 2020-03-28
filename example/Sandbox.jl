@@ -20,6 +20,7 @@ struct ExampleLayer{
 
     square_position::Vector{Float32} # mutable struct w/ Vec3f0 might be better
     square_translation_speed::Float32
+    square_color::Vector{Float32}
 end
 
 function ExampleLayer(name::String = "Example")
@@ -65,11 +66,11 @@ function ExampleLayer(name::String = "Example")
     #version 330 core
 
     layout(location = 0) out vec4 color; // a = attributed
-    uniform vec4 u_color;
+    uniform vec3 u_color;
     in vec3 v_position;
 
     void main(){
-        color = u_color;
+        color = vec4(u_color, 1.0);
     }
     """
 
@@ -138,12 +139,18 @@ function ExampleLayer(name::String = "Example")
         Hazel.VertexArray(vertex_buffer, index_buffer)
     )
 
+    sq_color = Float32[0.2, 0.4, 0.8]
+    @eval function Hazel.render(l::ImGuiLayer)
+        Hazel.CImGui.ColorEdit3("Square color", $sq_color)
+    end
+
     ExampleLayer(
         Ref{Hazel.BasicApplication}(),
         name, Hazel.Renderer(), Hazel.Scene(camera, square_robj, triangle_robj),
         square_robj, triangle_robj,
         camera, 1f0, 1f0,
-        Float32[0, 0, 0], 0.1f0
+        Float32[0, 0, 0], 0.1f0,
+        sq_color
     )
 end
 
@@ -191,21 +198,20 @@ function Hazel.update!(l::ExampleLayer, dt)
 
     Hazel.clear(Hazel.RenderCommand)
     # Hazel.submit(l.renderer, l.scene)
+    Hazel.bind(l.square_robj)
+    Hazel.upload!(l.square_robj.shader, u_color = Vec3f0(l.square_color))
+
     for x in -10:10
         for y in -10:10
             pos = Vec3f0(l.square_position) + Vec3f0(0.11f0*x, 0.11f0*y, 0f0)
             transform = Hazel.translationmatrix(pos) * scale
-            if iseven(x)
-                Hazel.upload!(l.square_robj.shader, u_color = cblue)
-            else
-                Hazel.upload!(l.square_robj.shader, u_color = cred)
-            end
             Hazel.submit(l.renderer, l.square_robj, Hazel.projection_view(l.camera), transform)
         end
     end
     Hazel.submit(l.renderer, l.triangle_robj, Hazel.projection_view(l.camera))
     nothing
 end
+
 
 
 

@@ -149,9 +149,30 @@ function upload!(shader::Shader, name::String, v)
     location == -1 && throw(ErrorException("$name is not a valid uniform name!"))
     _upload!(shader, location, v)
 end
-function _upload!(shader::Shader, location, matrix::Mat4f0)
-    glUniformMatrix4fv(location, 1, GL_FALSE, matrix)
+
+# Mappings to OpenGL functions
+function _upload!(shader::Shader, location, value::Int32)
+    glUniform1i(location, value)
 end
-function _upload!(shader::Shader, location, vec::Vec4f0)
-    glUniform4f(location, vec...)
+function _upload!(shader::Shader, location, value::Float32)
+    glUniform1f(location, value)
+end
+
+for N in 2:4
+    for (type, typename) in (Float32 => :f, Int32 => :i)
+        # Vec{1..4, Int32/Float32} conversions
+        @eval function _upload!(shader::Shader, location, vec::Vec{$N, $type})
+            $(Symbol(:glUniform, N, typename))(location, vec...)
+        end
+    end
+    for M in 2:4
+        # Matrices
+        @eval function _upload!(shader::Shader, location,
+                matrix::SMatrix{$N, $M, Float32, $(N*M)}
+            )
+            $(Symbol(:glUniformMatrix, N == M ? N : "$(N)x$(M)", :fv))(
+                location, 1, GL_FALSE, matrix
+            )
+        end
+    end
 end
