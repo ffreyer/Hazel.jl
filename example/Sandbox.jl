@@ -13,6 +13,8 @@ struct ExampleLayer{
 
     square_robj::Hazel.RenderObject
     triangle_robj::Hazel.RenderObject
+    texture_robj::Hazel.RenderObject #tex_shader::Hazel.Shader
+    texture::Hazel.Texture2D
 
     camera::Hazel.OrthographicCamera
     cam_translation_speed::Float32
@@ -32,14 +34,14 @@ function ExampleLayer(name::String = "Example")
     # Render a Rectangle in the background (push first)
     # positions
     vertices = Float32[
-        -0.5, -0.5, 0.0,
-         0.5, -0.5, 0.0,
-        -0.5,  0.5, 0.0,
-         0.5,  0.5, 0.0
+        -0.5, -0.5, 0.0,   0.0, 0.0,
+         0.5, -0.5, 0.0,   1.0, 0.0,
+        -0.5,  0.5, 0.0,   0.0, 1.0,
+         0.5,  0.5, 0.0,   1.0, 1.0
     ]
     # vertices contains "positions" of type "Point3f0"
     # (Float32 3 component vectors)
-    layout = Hazel.BufferLayout(position = Point3f0)
+    layout = Hazel.BufferLayout(position = Point3f0, uv = Point2f0)
     # vertices + layout are bundled
     vertex_buffer = Hazel.VertexBuffer(vertices, layout)
     # indices to connect vertices (draw two triangles to make rectangle)
@@ -139,6 +141,42 @@ function ExampleLayer(name::String = "Example")
         Hazel.VertexArray(vertex_buffer, index_buffer)
     )
 
+
+    # texture shader
+    vertex_source = """
+    #version 330 core
+
+    layout(location = 0) in vec3 a_position; // a = attribute
+    layout(location = 1) in vec2 a_uv;
+
+    uniform mat4 u_projection_view;
+    uniform mat4 u_transform;
+
+    out vec2 v_uv; // v = varying
+
+    void main(){
+        v_uv = a_uv;
+        gl_Position = u_projection_view * u_transform * vec4(a_position, 1.0);
+    }
+    """
+    fragment_source = """
+    #version 330 core
+
+    layout(location = 0) out vec4 color; // a = attributed
+    uniform sampler2D u_texture;
+    in vec2 v_uv;
+
+    void main(){
+        color = texture(u_texture, v_uv);
+    }
+    """
+    tex_shader = Hazel.Shader(vertex_source, fragment_source)
+    texture_robj = Hazel.RenderObject(tex_shader, square_robj.vertex_array)
+
+    texture = Hazel.Texture2D(joinpath(Hazel.assetpath, "Checkerboard.png"))
+    Hazel.bind(texture)
+    Hazel.upload!(tex_shader, u_texture = Int32(0))
+
     sq_color = Float32[0.2, 0.4, 0.8]
     @eval function Hazel.render(l::ImGuiLayer)
         Hazel.CImGui.ColorEdit3("Square color", $sq_color)
@@ -148,6 +186,7 @@ function ExampleLayer(name::String = "Example")
         Ref{Hazel.BasicApplication}(),
         name, Hazel.Renderer(), Hazel.Scene(camera, square_robj, triangle_robj),
         square_robj, triangle_robj,
+        texture_robj, texture,
         camera, 1f0, 1f0,
         Float32[0, 0, 0], 0.1f0,
         sq_color
@@ -208,11 +247,16 @@ function Hazel.update!(l::ExampleLayer, dt)
             Hazel.submit(l.renderer, l.square_robj, Hazel.projection_view(l.camera), transform)
         end
     end
-    Hazel.submit(l.renderer, l.triangle_robj, Hazel.projection_view(l.camera))
+
+    Hazel.bind(l.texture)
+    transform = Hazel.scalematrix(Vec3f0(1.5))
+    Hazel.submit(l.renderer, l.texture_robj, Hazel.projection_view(l.camera), transform)
+
+
+    # Render triangle
+    # Hazel.submit(l.renderer, l.triangle_robj, Hazel.projection_view(l.camera))
     nothing
 end
-
-
 
 
 Hazel.destroy(l::ExampleLayer) = Hazel.destroy(l.scene)

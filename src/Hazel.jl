@@ -13,6 +13,7 @@ using LinearAlgebra
 using Reexport
 @reexport using GeometryTypes, Colors
 using StaticArrays, Quaternions
+using FileIO, ImageIO, FixedPointNumbers, ImageMagick # loading png files
 
 # projection stuff
 include("math/math.jl")
@@ -63,6 +64,7 @@ export Renderer, submit
 export RenderObject, Scene, camera
 export Shader, upload!
 export VertexArray, vertex_buffer, index_buffer
+export Texture2D
 
 
 # A thing to render on
@@ -94,5 +96,7 @@ include("Application/Application.jl")
 export AbstractApplication, BasicApplication
 export init!, destroy
 
+
+const assetpath = joinpath((@__DIR__())[1:end-3], "assets")
 
 end
