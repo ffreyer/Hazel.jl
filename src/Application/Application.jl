@@ -32,6 +32,7 @@ function init!(app::BasicApplication)
     end
 
     app.running = true
+    init!(Renderer())
     push_overlay!(app, ImGuiLayer())
 
     app

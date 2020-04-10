@@ -15,6 +15,7 @@ struct ExampleLayer{
     triangle_robj::Hazel.RenderObject
     texture_robj::Hazel.RenderObject #tex_shader::Hazel.Shader
     texture::Hazel.Texture2D
+    alpha_texture::Hazel.Texture2D
 
     camera::Hazel.OrthographicCamera
     cam_translation_speed::Float32
@@ -174,6 +175,7 @@ function ExampleLayer(name::String = "Example")
     texture_robj = Hazel.RenderObject(tex_shader, square_robj.vertex_array)
 
     texture = Hazel.Texture2D(joinpath(Hazel.assetpath, "Checkerboard.png"))
+    alpha_texture = Hazel.Texture2D(joinpath(Hazel.assetpath, "swirl.png"))
     Hazel.bind(texture)
     Hazel.upload!(tex_shader, u_texture = Int32(0))
 
@@ -186,7 +188,7 @@ function ExampleLayer(name::String = "Example")
         Ref{Hazel.BasicApplication}(),
         name, Hazel.Renderer(), Hazel.Scene(camera, square_robj, triangle_robj),
         square_robj, triangle_robj,
-        texture_robj, texture,
+        texture_robj, texture, alpha_texture,
         camera, 1f0, 1f0,
         Float32[0, 0, 0], 0.1f0,
         sq_color
@@ -251,10 +253,10 @@ function Hazel.update!(l::ExampleLayer, dt)
     Hazel.bind(l.texture)
     transform = Hazel.scalematrix(Vec3f0(1.5))
     Hazel.submit(l.renderer, l.texture_robj, Hazel.projection_view(l.camera), transform)
+    Hazel.unbind(l.texture_robj)
+    Hazel.bind(l.alpha_texture)
+    Hazel.submit(l.renderer, l.texture_robj, Hazel.projection_view(l.camera), transform)
 
-
-    # Render triangle
-    # Hazel.submit(l.renderer, l.triangle_robj, Hazel.projection_view(l.camera))
     nothing
 end
 

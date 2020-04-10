@@ -10,6 +10,11 @@ RenderCommand is a `module` that contains "low"-level render calls.
 struct OpenGLRenderCommand <: AbstractRenderCommand end
 const RenderCommand = OpenGLRenderCommand()
 
+function init!(r::OpenGLRenderCommand; kwargs...)
+    glEnable(GL_BLEND)
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+end
+
 clear(r::OpenGLRenderCommand, color::Colorant) = clear(r, RGBA(color))
 function clear(::OpenGLRenderCommand, color::RGBA = RGBA(0.1, 0.1, 0.1, 1.0))
     glClearColor(color.r, color.g , color.b, color.alpha)

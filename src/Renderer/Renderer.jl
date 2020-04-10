@@ -28,6 +28,13 @@ struct Renderer{T <: AbstractRenderCommand}
 end
 
 """
+    init!(::Renderer)
+
+Intializes/Configures the renderer.
+"""
+init!(r::Renderer; kwargs...) = init!(r.rc; kwargs...)
+
+"""
     submit(::Renderer, scene[, transform = I])
 
 Draw a given `scene`.
