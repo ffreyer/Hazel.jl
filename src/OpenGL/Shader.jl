@@ -7,6 +7,72 @@ _opengl_string(s::String) = _opengl_string(Vector{UInt8}(s))
 
 
 """
+    Shader(path_to_file)
+
+Constructs a Shader from a file containing their source code. Within the file
+`#type <shadertype>`, where shadertype is either `vertex` or `fragment`, should
+be used to mark the type of shader.
+
+# Warning
+
+There is explicit cleanup required! Call ´destroy(shader)´ to remove it
+from the gpu.
+"""
+function Shader(path::String; debug=false)
+    sources = Pair{UInt32, String}[]
+    open(path, "r") do file
+        source = ""
+        target = :none
+        for line in eachline(file)
+            if startswith(line, "#type")
+                target == :vertex && push!(sources, GL_VERTEX_SHADER => source)
+                target == :fragment && push!(
+                    sources, GL_FRAGMENT_SHADER => source
+                )
+                if (target == :none) && !isempty(source)
+                    @warn "Failed to parse '$source' - no target set."
+                end
+                source = ""
+
+                maybe_target = line[7:end]
+                if occursin(maybe_target, "vertex")
+                    target = :vertex
+                elseif occursin(maybe_target, "fragment")
+                    target = :fragment
+                else
+                    target = :none
+                    @warn "Failed to parse '$line'"
+                end
+                continue
+            end
+            isempty(line) && continue
+            startswith(line, "//") && continue
+            source *= line * "\n"
+        end
+
+        target == :vertex && push!(sources, GL_VERTEX_SHADER => source)
+        target == :fragment && push!(
+            sources, GL_FRAGMENT_SHADER => source
+        )
+        if (target == :none) && !isempty(source)
+            @warn "Failed to parse '$source' - no target set."
+        end
+    end
+
+    if debug
+        for (target, source) in sources
+            println("----------------------------")
+            println("target is $target")
+            println(source)
+        end
+        println("----------------------------")
+    end
+
+    compile(sources)
+end
+
+
+"""
     Shader(vertex_source, fragment_source)
 
 Constructs a Shader from strings containing their source code.
@@ -17,118 +83,70 @@ There is explicit cleanup required! Call ´destroy(shader)´ to remove it
 from the gpu.
 """
 function Shader(vertex_source::String, fragment_source::String)
+    compile([
+        GL_VERTEX_SHADER => vertex_source,
+        GL_FRAGMENT_SHADER => fragment_source
+    ])
+end
+
+function compile(sources::Vector{Pair{UInt32, String}})
     # TODO should this hard-error when it fails?
     # TODO should this return a FailedShader or DefaultShader when it fails?
     # Based on https://www.khronos.org/opengl/wiki/Shader_Compilation#Example
 
-    # Create an empty vertex shader handle
-    vertex_shader = glCreateShader(GL_VERTEX_SHADER)
-
-    # Send the vertex shader source code to GL
-    glShaderSource(
-        vertex_shader,
-        1,
-        _opengl_string(vertex_source),
-        Ref{Int32}(length(vertex_source))
-    )
-
-    # Compile the vertex shader
-    glCompileShader(vertex_shader)
-
-    is_compiled = Ref{GLint}(0)
-    glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, is_compiled)
-    if is_compiled == GL_FALSE
-    	max_length = Ref{GLint}(0)
-    	glGetShaderiv(vertex_shader, GL_INFO_LOG_LENGTH, max_length)
-
-    	# The maxLength includes the NULL character
-        info_log = Vector{Cchar}(undef, max_length)
-    	glGetShaderInfoLog(vertex_shader, max_length[], max_length, info_log)
-
-    	# We don't need the shader anymore.
-    	glDeleteShader(vertex_shader);
-
-    	# Use the infoLog as you see fit.
-        @error "Vertex Shader Compilation failed - Info Log: \n$info_log"
-
-    	# In this simple program, we'll just leave
-    	return nothing
-    end
-
-    # Create an empty fragment shader handle
-    fragment_shader = glCreateShader(GL_FRAGMENT_SHADER)
-
-    # Send the fragment shader source code to GL
-    glShaderSource(
-        fragment_shader,
-        1,
-        _opengl_string(fragment_source),
-        Ref{Int32}(length(fragment_source))
-    )
-
-    # Compile the fragment shader
-    glCompileShader(fragment_shader)
-
-    glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, is_compiled)
-    if is_compiled == GL_FALSE
-    	max_length = Ref{GLint}(0)
-    	glGetShaderiv(fragment_shader, GL_INFO_LOG_LENGTH, max_length)
-
-    	# The maxLength includes the NULL character
-    	info_log = Vector{Cchar}(undef, max_length)
-    	glGetShaderInfoLog(fragment_shader, max_length[], max_length, info_log)
-
-    	# We don't need the shader anymore.
-    	glDeleteShader(fragment_shader)
-    	# Either of them. Don't leak shaders.
-    	glDeleteShader(vertex_shader)
-
-    	# Use the infoLog as you see fit.
-        @error "Fragment Shader Compilation failed - Info Log: \n$info_log"
-
-    	# In this simple program, we'll just leave
-    	return nothing
-    end
-
-    # Vertex and fragment shaders are successfully compiled.
-    # Now time to link them together into a program.
-    # Get a program object.
     program = glCreateProgram()
+    gl_shader_ids = Vector{UInt32}(undef, length(sources))
 
-    # Attach our shaders to our program
-    glAttachShader(program, vertex_shader)
-    glAttachShader(program, fragment_shader)
+    for (i, (type, source)) in enumerate(sources)
+        shader = glCreateShader(type)
 
-    # Link our program
+        glShaderSource(
+            shader,
+            1,
+            _opengl_string(source),
+            Ref{Int32}(length(source))
+        )
+
+        glCompileShader(shader)
+
+        is_compiled = Ref{GLint}(0)
+        glGetShaderiv(shader, GL_COMPILE_STATUS, is_compiled)
+        if is_compiled == GL_FALSE
+        	max_length = Ref{GLint}(0)
+        	glGetShaderiv(shader, GL_INFO_LOG_LENGTH, max_length)
+            info_log = Vector{Cchar}(undef, max_length)
+        	glGetShaderInfoLog(shader, max_length[], max_length, info_log)
+        	glDeleteShader(shader);
+            @error "Shader Compilation failed - Info Log: \n$info_log"
+            break
+        end
+
+        glAttachShader(program, shader)
+        gl_shader_ids[i] = shader
+    end
+
     glLinkProgram(program)
 
-    # Note the different functions here: glGetProgram* instead of glGetShader*.
-    is_linked = is_compiled # Reusing it
+    is_linked = Ref{GLint}(0)
     glGetProgramiv(program, GL_LINK_STATUS, is_linked)
     if is_linked == GL_FALSE
     	max_length = Ref{GLint}(0)
     	glGetProgramiv(program, GL_INFO_LOG_LENGTH, max_length)
 
-    	# The maxLength includes the NULL character
     	info_log = Vector{Cchar}(max_length)
     	glGetProgramInfoLog(program, max_length[], max_length, info_log)
 
-    	# We don't need the program anymore.
     	glDeleteProgram(program)
-    	# Don't leak shaders either.
-    	glDeleteShader(vertex_shader)
-    	glDeleteShader(fragment_shader)
+    	glDeleteShader.(gl_shader_ids)
 
-    	# Use the infoLog as you see fit.
         @error "Program Linking failed - Info Log: \n$info_log"
 
-    	# In this simple program, we'll just leave
     	return nothing
     end
 
-    # Always detach shaders after a successful link.
-    glDetachShader(program, vertex_shader)
-    glDetachShader(program, fragment_shader)
+    for shader in gl_shader_ids
+        glDetachShader(program, shader)
+    end
 
     return Shader(program)
 end

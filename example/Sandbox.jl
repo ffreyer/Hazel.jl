@@ -79,11 +79,6 @@ function ExampleLayer(name::String = "Example")
 
     # # Combine everything into a renderobject. A Renderobject has all the
     # # information necessary to be rendered.
-    # # Add it to the Scene which is renderer on this layer
-    # push!(scene, Hazel.RenderObject(
-    #     Hazel.Shader(vertex_source, fragment_source),
-    #     Hazel.VertexArray(vertex_buffer, index_buffer)
-    # ))
     square_robj = Hazel.RenderObject(
         Hazel.Shader(vertex_source, fragment_source),
         Hazel.VertexArray(vertex_buffer, index_buffer)
@@ -144,38 +139,13 @@ function ExampleLayer(name::String = "Example")
 
 
     # texture shader
-    vertex_source = """
-    #version 330 core
 
-    layout(location = 0) in vec3 a_position; // a = attribute
-    layout(location = 1) in vec2 a_uv;
-
-    uniform mat4 u_projection_view;
-    uniform mat4 u_transform;
-
-    out vec2 v_uv; // v = varying
-
-    void main(){
-        v_uv = a_uv;
-        gl_Position = u_projection_view * u_transform * vec4(a_position, 1.0);
-    }
-    """
-    fragment_source = """
-    #version 330 core
-
-    layout(location = 0) out vec4 color; // a = attributed
-    uniform sampler2D u_texture;
-    in vec2 v_uv;
-
-    void main(){
-        color = texture(u_texture, v_uv);
-    }
-    """
-    tex_shader = Hazel.Shader(vertex_source, fragment_source)
+    # tex_shader = Hazel.Shader(vertex_source, fragment_source)
+    tex_shader = Hazel.Shader(joinpath(Hazel.assetpath, "shaders", "Texture.glsl"))
     texture_robj = Hazel.RenderObject(tex_shader, square_robj.vertex_array)
 
-    texture = Hazel.Texture2D(joinpath(Hazel.assetpath, "Checkerboard.png"))
-    alpha_texture = Hazel.Texture2D(joinpath(Hazel.assetpath, "swirl.png"))
+    texture = Hazel.Texture2D(joinpath(Hazel.assetpath, "textures", "Checkerboard.png"))
+    alpha_texture = Hazel.Texture2D(joinpath(Hazel.assetpath, "textures", "swirl.png"))
     Hazel.bind(texture)
     Hazel.upload!(tex_shader, u_texture = Int32(0))
 
