@@ -1,10 +1,11 @@
 struct Shader <: AbstractShader
     id::Ref{UInt32}
+    name::String
 end
 
 _opengl_string(s::Vector{UInt8}) = Ptr{UInt8}[pointer(s)]
 _opengl_string(s::String) = _opengl_string(Vector{UInt8}(s))
-
+_name_from_file(path::String) = string(split(splitdir(path)[2], '.')[1])
 
 """
     Shader(path_to_file)
@@ -18,7 +19,7 @@ be used to mark the type of shader.
 There is explicit cleanup required! Call ´destroy(shader)´ to remove it
 from the gpu.
 """
-function Shader(path::String; debug=false)
+function Shader(path::String; debug=false, name=_name_from_file(path))
     sources = Pair{UInt32, String}[]
     open(path, "r") do file
         source = ""
@@ -68,7 +69,7 @@ function Shader(path::String; debug=false)
         println("----------------------------")
     end
 
-    compile(sources)
+    compile(sources, name=name)
 end
 
 
@@ -82,14 +83,14 @@ Constructs a Shader from strings containing their source code.
 There is explicit cleanup required! Call ´destroy(shader)´ to remove it
 from the gpu.
 """
-function Shader(vertex_source::String, fragment_source::String)
+function Shader(name::String, vertex_source::String, fragment_source::String)
     compile([
         GL_VERTEX_SHADER => vertex_source,
         GL_FRAGMENT_SHADER => fragment_source
-    ])
+    ], name=name)
 end
 
-function compile(sources::Vector{Pair{UInt32, String}})
+function compile(sources::Vector{Pair{UInt32, String}}; name::String)
     # TODO should this hard-error when it fails?
     # TODO should this return a FailedShader or DefaultShader when it fails?
     # Based on https://www.khronos.org/opengl/wiki/Shader_Compilation#Example
@@ -148,12 +149,13 @@ function compile(sources::Vector{Pair{UInt32, String}})
         glDetachShader(program, shader)
     end
 
-    return Shader(program)
+    return Shader(program, name)
 end
 
 destroy(shader::Shader) = glDeleteProgram(shader.id[])
 bind(shader::Shader) = glUseProgram(shader.id[])
 unbind(shader::Shader) = glUseProgram(0)
+name(shader::Shader) = shader.name
 
 
 function upload!(shader::Shader; kwargs...)
@@ -192,5 +194,21 @@ for N in 2:4
                 location, 1, GL_FALSE, matrix
             )
         end
+    end
+end
+
+
+
+const ShaderLibrary = Dict{String, Shader}
+
+Base.push!(sl::ShaderLibrary, shader::Shader) = push!(sl, name(shader) => shader)
+function load!(
+        sl::ShaderLibrary, filepath::String;
+        name=_name_from_file(filepath), kwargs...
+    )
+    if haskey(sl, name)
+        sl[name] = Shader(filepath, name=name; kwargs...)
+    else
+        push!(sl, Shader(filepath; kwargs...))
     end
 end

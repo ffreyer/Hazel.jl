@@ -10,6 +10,7 @@ struct ExampleLayer{
     name::String
     renderer::Hazel.Renderer
     scene::ST
+    shader_library::Hazel.ShaderLibrary
 
     square_robj::Hazel.RenderObject
     triangle_robj::Hazel.RenderObject
@@ -30,6 +31,7 @@ function ExampleLayer(name::String = "Example")
     # Build a basic Scene
     camera = Hazel.OrthographicCamera(-1.6f0, 1.6f0, -0.9f0, 0.9f0)
     scene = Hazel.Scene(camera)
+    shader_library = Hazel.ShaderLibrary()
 
 
     # Render a Rectangle in the background (push first)
@@ -80,9 +82,10 @@ function ExampleLayer(name::String = "Example")
     # # Combine everything into a renderobject. A Renderobject has all the
     # # information necessary to be rendered.
     square_robj = Hazel.RenderObject(
-        Hazel.Shader(vertex_source, fragment_source),
+        Hazel.Shader("SquareShader", vertex_source, fragment_source),
         Hazel.VertexArray(vertex_buffer, index_buffer)
     )
+    push!(shader_library, square_robj.shader)
 
     # Render a triangle with interpolated colors in the foreground
     # (push after background)
@@ -133,15 +136,20 @@ function ExampleLayer(name::String = "Example")
     #     Hazel.VertexArray(vertex_buffer, index_buffer)
     # ))
     triangle_robj = Hazel.RenderObject(
-        Hazel.Shader(vertex_source, fragment_source),
+        Hazel.Shader("TriangleShader", vertex_source, fragment_source),
         Hazel.VertexArray(vertex_buffer, index_buffer)
     )
+    push!(shader_library, triangle_robj.shader)
 
 
     # texture shader
 
     # tex_shader = Hazel.Shader(vertex_source, fragment_source)
-    tex_shader = Hazel.Shader(joinpath(Hazel.assetpath, "shaders", "Texture.glsl"))
+    # tex_shader = Hazel.Shader(joinpath(Hazel.assetpath, "shaders", "Texture.glsl"))
+    Hazel.load!(
+        shader_library, joinpath(Hazel.assetpath, "shaders", "Texture.glsl")
+    )
+    tex_shader = shader_library["Texture"]
     texture_robj = Hazel.RenderObject(tex_shader, square_robj.vertex_array)
 
     texture = Hazel.Texture2D(joinpath(Hazel.assetpath, "textures", "Checkerboard.png"))
@@ -157,6 +165,7 @@ function ExampleLayer(name::String = "Example")
     ExampleLayer(
         Ref{Hazel.BasicApplication}(),
         name, Hazel.Renderer(), Hazel.Scene(camera, square_robj, triangle_robj),
+        shader_library,
         square_robj, triangle_robj,
         texture_robj, texture, alpha_texture,
         camera, 1f0, 1f0,
@@ -216,7 +225,10 @@ function Hazel.update!(l::ExampleLayer, dt)
         for y in -10:10
             pos = Vec3f0(l.square_position) + Vec3f0(0.11f0*x, 0.11f0*y, 0f0)
             transform = Hazel.translationmatrix(pos) * scale
-            Hazel.submit(l.renderer, l.square_robj, Hazel.projection_view(l.camera), transform)
+            Hazel.submit(
+                l.renderer, l.square_robj, Hazel.projection_view(l.camera),
+                transform
+            )
         end
     end
 
