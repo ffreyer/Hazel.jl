@@ -100,3 +100,15 @@ export init!, destroy
 const assetpath = joinpath((@__DIR__())[1:end-3], "assets")
 
 end
+
+
+# TODO Plan:
+# - Cherno plans to make a Renderer2D
+#   not sure if that's compatable with my stuff
+#   might be better to have RenderObject2D and dispatch on that
+# - GLAbstraction has a texture atlas :^)
+# - video codec system :o
+# - UI / Layouting
+# - text rendering
+# - post effects (bloom, color correction)
+# - particle system
