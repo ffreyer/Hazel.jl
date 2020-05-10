@@ -41,27 +41,32 @@ end
 
 
 function renderloop(app::AbstractApplication)
-    renderer = Renderer()
-    t = time()
-    while app.running
-        new_t = time()
-        dt = new_t - t
-        t = new_t
+    try
+        renderer = Renderer()
+        t = time()
+        while app.running
+            new_t = time()
+            dt = new_t - t
+            t = new_t
 
-        # Render layers in order (bottom to top)
-        for layer in app.layerstack
-            update!(layer, dt)
+            # Render layers in order (bottom to top)
+            for layer in app.layerstack
+                update!(layer, dt)
+            end
+
+            update!(app.window, dt)
+
+            yield()
         end
-
-        update!(app.window, dt)
-
         yield()
+        destroy.(app.layerstack)
+        empty!(app.layerstack, app)
+        # If we dont call GLFW.DestroyWindow after the loop we get a segfault :(
+        destroy(window(app))
+    catch e
+        @error "Renderloop failed!" exception=e
+        rethrow(e)
     end
-    yield()
-    destroy.(app.layerstack)
-    empty!(app.layerstack, app)
-    # If we dont call GLFW.DestroyWindow after the loop we get a segfault :(
-    destroy(window(app))
 end
 
 function Base.run(app::AbstractApplication)

@@ -74,3 +74,10 @@ Updates the given `window`. This includes polling events and swapping buffers.
 Returns the native window of the given `Window`.
 """
 @backend native_window
+
+"""
+    aspect_ratio(window)
+
+Returns the current aspect ratio `width/height`.
+"""
+aspect_ratio(w::WindowProperties) = w.width/w.height

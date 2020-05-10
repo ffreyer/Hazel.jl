@@ -1,3 +1,4 @@
+using Revise
 using Hazel
 
 # implement Layer
@@ -18,9 +19,7 @@ struct ExampleLayer{
     texture::Hazel.Texture2D
     alpha_texture::Hazel.Texture2D
 
-    camera::Hazel.OrthographicCamera
-    cam_translation_speed::Float32
-    cam_rotation_speed::Float32
+    camera_controller::Hazel.OrthographicCameraController
 
     square_position::Vector{Float32} # mutable struct w/ Vec3f0 might be better
     square_translation_speed::Float32
@@ -29,7 +28,8 @@ end
 
 function ExampleLayer(name::String = "Example")
     # Build a basic Scene
-    camera = Hazel.OrthographicCamera(-1.6f0, 1.6f0, -0.9f0, 0.9f0)
+    camera_controller = Hazel.OrthographicCameraController(1280/720, rotation = true)
+    camera = Hazel.camera(camera_controller)
     scene = Hazel.Scene(camera)
     shader_library = Hazel.ShaderLibrary()
 
@@ -168,7 +168,7 @@ function ExampleLayer(name::String = "Example")
         shader_library,
         square_robj, triangle_robj,
         texture_robj, texture, alpha_texture,
-        camera, 1f0, 1f0,
+        camera_controller,
         Float32[0, 0, 0], 0.1f0,
         sq_color
     )
@@ -182,20 +182,7 @@ end
 function Hazel.update!(l::ExampleLayer, dt)
     app = l.app[]
 
-    # Move camera
-    offset = -Vec3f0(
-        Hazel.keypressed(app, Hazel.KEY_RIGHT) * l.cam_translation_speed -
-            Hazel.keypressed(app, Hazel.KEY_LEFT) * l.cam_translation_speed,
-        Hazel.keypressed(app, Hazel.KEY_UP) * l.cam_translation_speed -
-            Hazel.keypressed(app, Hazel.KEY_DOWN) * l.cam_translation_speed,
-        0
-    )
-    Hazel.moveby!(l.camera, dt * offset)
-    # Rotate camera
-    rotation =
-        Hazel.keypressed(app, Hazel.KEY_D) * l.cam_rotation_speed -
-        Hazel.keypressed(app, Hazel.KEY_A) * l.cam_rotation_speed
-    Hazel.rotateby!(l.camera, dt * rotation)
+    update!(l.camera_controller, app, dt)
 
     # Move square
     offset = Vec3f0(
@@ -226,7 +213,8 @@ function Hazel.update!(l::ExampleLayer, dt)
             pos = Vec3f0(l.square_position) + Vec3f0(0.11f0*x, 0.11f0*y, 0f0)
             transform = Hazel.translationmatrix(pos) * scale
             Hazel.submit(
-                l.renderer, l.square_robj, Hazel.projection_view(l.camera),
+                l.renderer, l.square_robj,
+                Hazel.projection_view(l.camera_controller.camera),
                 transform
             )
         end
@@ -234,14 +222,23 @@ function Hazel.update!(l::ExampleLayer, dt)
 
     Hazel.bind(l.texture)
     transform = Hazel.scalematrix(Vec3f0(1.5))
-    Hazel.submit(l.renderer, l.texture_robj, Hazel.projection_view(l.camera), transform)
+    Hazel.submit(
+        l.renderer, l.texture_robj,
+        Hazel.projection_view(l.camera_controller.camera), transform
+    )
     Hazel.unbind(l.texture_robj)
     Hazel.bind(l.alpha_texture)
-    Hazel.submit(l.renderer, l.texture_robj, Hazel.projection_view(l.camera), transform)
+    Hazel.submit(
+        l.renderer, l.texture_robj,
+        Hazel.projection_view(l.camera_controller.camera), transform
+    )
 
     nothing
 end
 
+function Hazel.handle!(l::ExampleLayer, e::AbstractEvent)
+    Hazel.handle!(l.camera_controller, e)
+end
 
 Hazel.destroy(l::ExampleLayer) = Hazel.destroy(l.scene)
 Hazel.string(l::ExampleLayer) = l.name
