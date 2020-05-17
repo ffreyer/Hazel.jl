@@ -57,8 +57,8 @@ function handle!(c::OrthographicCameraController{T}, e::MouseScrolledEvent) wher
     false
 end
 
-function handle!(c::OrthographicCameraController, e::WindowResizeEvent)
-    c.aspect_ratio = e.width / e.height
+function handle!(c::OrthographicCameraController{T}, e::WindowResizeEvent) where {T}
+    c.aspect_ratio = T(e.width / e.height)
     projection!(
         c.camera, -c.aspect_ratio * c.zoom, c.aspect_ratio * c.zoom, -c.zoom, c.zoom
     )
@@ -141,6 +141,20 @@ end
 Returns the current rotation of the camera
 """
 rotation(c::OrthographicCameraController) = c.rotation
+
+
+"""
+    zoom!(camera_controller, zoom)
+
+Sets the zoom level of the camera_controller
+"""
+zoom!(c::OrthographicCameraController{T}, zoom::T) where {T} = c.zoom = zoom
+"""
+    zoom(camera_controller)
+
+Returns the current zoom level of the camera_controller
+"""
+zoom(c::OrthographicCameraController) = c.zoom
 
 
 camera(c::OrthographicCameraController) = c.camera

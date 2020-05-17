@@ -29,3 +29,5 @@ function draw_indexed(::OpenGLRenderCommand, va::VertexArray)
         C_NULL
     )
 end
+
+viewport(::OpenGLRenderCommand, x, y, w, h) = glViewport(x, y, w, h)

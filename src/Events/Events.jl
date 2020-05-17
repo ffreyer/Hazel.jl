@@ -21,6 +21,8 @@ end
 struct WindowFocusEvent <: WindowEvent end
 struct WindowLostFocusEvent <: WindowEvent end
 struct WindowMovedEvent <: WindowEvent end
+struct WindowMinimizedEvent <: WindowEvent end
+struct WindowRestoredEvent <: WindowEvent end
 
 
 struct KeyPressedEvent{keycode} <: KeyboardEvent{keycode}

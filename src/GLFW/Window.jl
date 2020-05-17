@@ -36,6 +36,16 @@ function Window(props::WindowProperties, event_callback::Function; vsync=true)
         ec = event_callback
         GLFW.SetWindowSizeCallback(glfw_w, (_, w, h) -> ec(WindowResizeEvent(w, h)))
         GLFW.SetWindowCloseCallback(glfw_w, _ -> ec(WindowCloseEvent()))
+        GLFW.SetWindowIconifyCallback(glfw_w, (_, iconified) -> if iconified
+            ec(WindowMinimizedEvent())
+        else
+            ec(WindowRestoredEvent())
+        end)
+        GLFW.SetWindowFocusCallback(glfw_w, (_, focused) -> if focused
+            ec(WindowFocusEvent())
+        else
+            ec(WindowLostFocusEvent())
+        end)
         GLFW.SetKeyCallback(glfw_w, (_, key, scancode, action, mods) -> begin
             if action == GLFW.PRESS
                 ec(KeyPressedEvent{Key(key)}(0, scancode, mods))

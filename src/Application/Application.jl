@@ -4,6 +4,7 @@ include("Inputs.jl")
 mutable struct BasicApplication <: AbstractApplication
     window::Window
     running::Bool
+    minimized::Bool
     # allow MutableLayerStack -> StaticLayerStack
     layerstack::AbstractLayerStack
 end
@@ -12,7 +13,7 @@ function BasicApplication()
 
     app = BasicApplication(
         Window(e -> handle!(app, e)),
-        true,
+        true, false,
         MutableLayerStack()
     )
 
@@ -49,11 +50,14 @@ function renderloop(app::AbstractApplication)
             dt = new_t - t
             t = new_t
 
-            # Render layers in order (bottom to top)
-            for layer in app.layerstack
-                update!(layer, dt)
+            if !app.minimized
+                # Render layers in order (bottom to top)
+                for layer in app.layerstack
+                    update!(layer, dt)
+                end
             end
 
+            # This also polls events
             update!(app.window, dt)
 
             yield()
@@ -82,6 +86,9 @@ end
 function handle!(app::AbstractApplication, event::AbstractEvent)
     # handle! returns true if the event has been processed
     handle!(window(app), event) && return true
+    event isa WindowMinimizedEvent && minimize!(app)
+    event isa WindowRestoredEvent && restore!(app)
+    event isa WindowResizeEvent && resize!(app, event.width, event.height)
 
     for layer in Iterators.reverse(app.layerstack)
         handle!(layer, event) && return true
@@ -118,4 +125,17 @@ function handle!(app::AbstractApplication, event::WindowCloseEvent)
     @warn "Closing Window"
     destroy(app)
     true
+end
+
+function minimize!(app::AbstractApplication)
+    app.minimized = true
+    false
+end
+function restore!(app::AbstractApplication)
+    app.minimized = false
+    false
+end
+function resize!(app::AbstractApplication, width, height)
+    resize!(Renderer(), width, height)
+    false
 end

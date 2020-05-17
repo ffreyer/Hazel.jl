@@ -34,6 +34,10 @@ Intializes/Configures the renderer.
 """
 init!(r::Renderer; kwargs...) = init!(r.rc; kwargs...)
 
+function resize!(r::Renderer, width, height)
+    viewport(r.rc, 0, 0, width, height)
+end
+
 """
     submit(::Renderer, scene[, transform = I])
 
