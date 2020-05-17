@@ -58,9 +58,9 @@ function handle!(c::OrthographicCameraController{T}, e::MouseScrolledEvent) wher
 end
 
 function handle!(c::OrthographicCameraController, e::WindowResizeEvent)
-    c.aspect_ratio = width / height
+    c.aspect_ratio = e.width / e.height
     projection!(
-        c.camera, -c.aspect_ratio * zoom, c.aspect_ratio * zoom, -zoom, zoom
+        c.camera, -c.aspect_ratio * c.zoom, c.aspect_ratio * c.zoom, -c.zoom, c.zoom
     )
     false
 end
