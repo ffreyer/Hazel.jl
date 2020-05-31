@@ -17,50 +17,45 @@
 # Dynamic scenes would remain the same between iterations
 # of the renderloop. I.e. they'd change when explictly told
 # to by push! or deleteat! or pop! or something
-"""
-    Renderer()
 
-Creates a `Renderer` which handles draw calls.
-"""
-struct Renderer{T <: AbstractRenderCommand}
-    rc::T
-    Renderer() = new{typeof(RenderCommand)}(RenderCommand)
-end
+module Renderer
+
+using ..Hazel
+
 
 """
-    init!(::Renderer)
+    Renderer.init!([; kwargs...])
 
 Intializes/Configures the renderer.
 """
-init!(r::Renderer; kwargs...) = init!(r.rc; kwargs...)
+init!(kwargs...) = Hazel.init!(Hazel.RenderCommand, kwargs...)
 
-function resize!(r::Renderer, width, height)
-    viewport(r.rc, 0, 0, width, height)
-end
+resize!(width, height) = Hazel.viewport(r.rc, 0, 0, width, height)
 
 """
-    submit(::Renderer, scene[, transform = I])
+    Renderer.submit(scene[; uniforms])
 
-Draw a given `scene`.
+Draws a `scene` with the given uniforms.
 """
-function submit(r::Renderer, scene::AbstractScene, transform::Mat4f0 = Mat4f0(I))
+function submit(scene::Hazel.AbstractScene; kwargs...)
     for robj in scene.render_objects
-        submit(r, robj, projection_view(scene.camera), transform)
+        submit(robj, u_porjection_view = Hazel.projection_view(scene.camera); kwargs...)
     end
 end
 
 
 """
-    submit(::Renderer, render_object[, transform = I])
+    Renderer.submit(render_object[; uniforms])
 
-Draw a given `render_object`.
+Draws a `render_object` with the given uniforms.
 """
-function submit(
-        r::Renderer, robj::RenderObject,
-        projection_view = Mat4f0(I), transform::Mat4f0 = Mat4f0(I)
-    )
-    bind(robj)
-    upload!(robj.shader, u_projection_view = projection_view)
-    upload!(robj.shader, u_transform = transform) # transform
-    draw_indexed(r.rc, robj.vertex_array)
+function submit(robj::Hazel.RenderObject; kwargs...)
+    Hazel.bind(robj)
+    for (name, value) in kwargs
+        Hazel.upload!(robj.shader, name, value)
+    end
+    Hazel.draw_indexed(Hazel.RenderCommand, robj.vertex_array)
+end
+
+
 end

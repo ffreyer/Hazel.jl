@@ -55,6 +55,7 @@ include("VertexArray.jl")
 # "high"-level Renderer implementation
 include("Scene.jl")
 include("Renderer.jl")
+include("Renderer2D.jl")
 
 
 include("Texture.jl")

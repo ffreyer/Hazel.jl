@@ -7,7 +7,6 @@ struct ExampleLayer{
     app::Ref{AT}
 
     name::String
-    renderer::Hazel.Renderer
     scene::ST
     shader_library::Hazel.ShaderLibrary
 
@@ -162,7 +161,7 @@ function ExampleLayer(name::String = "Example")
 
     ExampleLayer(
         Ref{Hazel.BasicApplication}(),
-        name, Hazel.Renderer(), Hazel.Scene(camera, square_robj, triangle_robj),
+        name, Hazel.Scene(camera, square_robj, triangle_robj),
         shader_library,
         square_robj, triangle_robj,
         texture_robj, texture, alpha_texture,
@@ -210,25 +209,27 @@ function Hazel.update!(l::ExampleLayer, dt)
         for y in -10:10
             pos = Vec3f0(l.square_position) + Vec3f0(0.11f0*x, 0.11f0*y, 0f0)
             transform = Hazel.translationmatrix(pos) * scale
-            Hazel.submit(
-                l.renderer, l.square_robj,
-                Hazel.projection_view(l.camera_controller.camera),
-                transform
+            Hazel.Renderer.submit(
+                l.square_robj,
+                u_projection_view = Hazel.projection_view(l.camera_controller.camera),
+                u_transform = transform
             )
         end
     end
 
     Hazel.bind(l.texture)
     transform = Hazel.scalematrix(Vec3f0(1.5))
-    Hazel.submit(
-        l.renderer, l.texture_robj,
-        Hazel.projection_view(l.camera_controller.camera), transform
+    Hazel.Renderer.submit(
+        l.texture_robj,
+        u_projection_view = Hazel.projection_view(l.camera_controller.camera),
+        u_transform = transform
     )
     Hazel.unbind(l.texture_robj)
     Hazel.bind(l.alpha_texture)
-    Hazel.submit(
-        l.renderer, l.texture_robj,
-        Hazel.projection_view(l.camera_controller.camera), transform
+    Hazel.Renderer.submit(
+        l.texture_robj,
+        u_projection_view = Hazel.projection_view(l.camera_controller.camera),
+        u_transform = transform
     )
 
     nothing

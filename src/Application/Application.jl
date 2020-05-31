@@ -33,7 +33,7 @@ function init!(app::BasicApplication)
     end
 
     app.running = true
-    init!(Renderer())
+    Renderer.init!()
     push_overlay!(app, ImGuiLayer())
 
     app
@@ -43,7 +43,6 @@ end
 
 function renderloop(app::AbstractApplication)
     try
-        renderer = Renderer()
         t = time()
         while app.running
             new_t = time()
@@ -65,11 +64,11 @@ function renderloop(app::AbstractApplication)
         yield()
         destroy.(app.layerstack)
         empty!(app.layerstack, app)
-        # If we dont call GLFW.DestroyWindow after the loop we get a segfault :(
-        destroy(window(app))
     catch e
         @error "Renderloop failed!" exception=e
         rethrow(e)
+    finally
+        destroy(window(app))
     end
 end
 
@@ -136,6 +135,6 @@ function restore!(app::AbstractApplication)
     false
 end
 function resize!(app::AbstractApplication, width, height)
-    resize!(Renderer(), width, height)
+    Renderer.resize!(width, height)
     false
 end

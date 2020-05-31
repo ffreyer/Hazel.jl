@@ -10,7 +10,7 @@ struct Sandbox2DLayer{
     camera_controller::Hazel.OrthographicCameraController
 
     # Temporary
-    robj::Hazel.RenderObject
+    scene::Hazel.Scene
     color::Vector{Float32}
 end
 
@@ -21,19 +21,9 @@ function Sandbox2DLayer(name = "Sandbox2D")
     )
 
     # Square
-    vertices = Float32[
-        -0.5, -0.5, 0.0,
-         0.5, -0.5, 0.0,
-        -0.5,  0.5, 0.0,
-         0.5,  0.5, 0.0
-    ]
-    layout = Hazel.BufferLayout(position = Point3f0)
-    vertex_buffer = Hazel.VertexBuffer(vertices, layout)
-    index_buffer = Hazel.IndexBuffer(UInt32[0, 1, 2, 1, 2, 3])
-
-    robj = Hazel.RenderObject(
-        Hazel.Shader(joinpath(Hazel.assetpath, "shaders", "flat_color.glsl")),
-        Hazel.VertexArray(vertex_buffer, index_buffer)
+    scene = Hazel.Scene(
+        camera_controller.camera,
+        Hazel.Renderer2D.Quad(Vec2f0(-0.5), Vec2f0(1))
     )
 
     # What a dirty hack lol
@@ -47,7 +37,7 @@ function Sandbox2DLayer(name = "Sandbox2D")
         Ref{Hazel.BasicApplication}(),
         name,
         camera_controller,
-        robj, color
+        scene, color
     )
 end
 
@@ -67,13 +57,14 @@ function Hazel.update!(l::Sandbox2DLayer, dt)
 
     Hazel.clear(Hazel.RenderCommand)
 
-    Hazel.bind(l.robj)
-    Hazel.upload!(l.robj.shader, u_color = Vec4f0(l.color))
-    Hazel.submit(
-        Hazel.Renderer(), l.robj,
-        Hazel.projection_view(l.camera_controller.camera),
-        Mat4f0(I)
-    )
+    # Hazel.bind(l.robj)
+    # Hazel.upload!(l.robj.shader, u_color = Vec4f0(l.color))
+    # Hazel.submit(
+    #     Hazel.Renderer(), l.robj,
+    #     Hazel.projection_view(l.camera_controller.camera),
+    #     Mat4f0(I)
+    # )
+    Hazel.Renderer2D.submit(l.scene, u_color = Vec4f0(l.color))
 
     nothing
 end
@@ -83,7 +74,7 @@ function Hazel.handle!(l::Sandbox2DLayer, e::AbstractEvent)
     Hazel.handle!(l.camera_controller, e)
 end
 
-Hazel.destroy(l::Sandbox2DLayer) = Hazel.destroy(l.robj)
+Hazel.destroy(l::Sandbox2DLayer) = Hazel.destroy(l.scene)
 Hazel.string(l::Sandbox2DLayer) = l.name
 
 
