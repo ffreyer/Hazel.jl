@@ -53,17 +53,7 @@ function Hazel.update!(l::Sandbox2DLayer, dt)
     app = l.app[]
 
     update!(l.camera_controller, app, dt)
-
-
     Hazel.clear(Hazel.RenderCommand)
-
-    # Hazel.bind(l.robj)
-    # Hazel.upload!(l.robj.shader, u_color = Vec4f0(l.color))
-    # Hazel.submit(
-    #     Hazel.Renderer(), l.robj,
-    #     Hazel.projection_view(l.camera_controller.camera),
-    #     Mat4f0(I)
-    # )
     Hazel.Renderer2D.submit(l.scene, u_color = Vec4f0(l.color))
 
     nothing

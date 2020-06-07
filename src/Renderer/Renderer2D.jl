@@ -34,7 +34,7 @@ function submit(robj::Hazel.RenderObject; kwargs...)
     for (name, value) in kwargs
         Hazel.upload!(robj.shader, name, value)
     end
-    Hazel.draw_indexed(Hazel.RenderCommand, robj.vertex_array)
+    Hazel.render(robj)
 end
 
 
@@ -44,19 +44,17 @@ function Quad(position::Vec2, widths::Vec2)
     Quad(Vec2f0(position), Vec2f0(widths))
 end
 function Quad(p::Vec2f0, w::Vec2f0)
-    vertices = Float32[
-        p[1], p[2],
-        p[1] + w[1], p[2],
-        p[1], p[2] + w[2],
-        p[1] +  w[1], p[2] + w[2]
-    ]
+    vertices = Float32[0, 0, 1, 0, 0, 1, 1, 1]
     layout = Hazel.BufferLayout(position = Point2f0)
     vertex_buffer = Hazel.VertexBuffer(vertices, layout)
     index_buffer = Hazel.IndexBuffer(UInt32[0, 1, 2, 1, 2, 3])
+    transform = Hazel.translationmatrix(Vec3f0(p..., 0)) *
+                Hazel.scalematrix(Vec3f0(w..., 1))
 
     Hazel.RenderObject(
         Hazel.Shader(joinpath(Hazel.assetpath, "shaders", "flat_color.glsl")),
-        Hazel.VertexArray(vertex_buffer, index_buffer)
+        Hazel.VertexArray(vertex_buffer, index_buffer),
+        Dict{String, Any}("u_transform" => transform)
     )
 end
 

@@ -10,14 +10,27 @@ again by calling `bind(robj.vertexarray)` or together with the shader by calling
 struct RenderObject{S <: AbstractShader, VA <: AbstractVertexArray}
     shader::S
     vertex_array::VA
+    uniforms::Dict{String, Any}
 
-    function RenderObject(shader::S, vertex_array::VA) where {
+    function RenderObject(
+            shader::S,
+            vertex_array::VA,
+            uniforms::Dict{String, Any}
+        ) where {
             S <: AbstractShader, VA <: AbstractVertexArray
         }
         # Otherwise the vertex_array maybe overwritten
         unbind(vertex_array)
-        new{S, VA}(shader, vertex_array)
+        new{S, VA}(shader, vertex_array, uniforms)
     end
+end
+
+function RenderObject(shader, vertex_array; kwargs...)
+    RenderObject(
+        shader,
+        vertex_array,
+        Dict{String, Any}(Pair(string(k), v) for (k, v) in kwargs)
+    )
 end
 
 function bind(r::RenderObject)
@@ -33,6 +46,14 @@ function destroy(r::RenderObject)
     # Shaders may be reused...
     destroy(r.shader)
     destroy(r.vertex_array)
+end
+
+function render(r::RenderObject)
+    # This
+    for (k, v) in r.uniforms
+        Hazel.upload!(r.shader, k, v)
+    end
+    Hazel.draw_indexed(Hazel.RenderCommand, r.vertex_array)
 end
 
 
@@ -52,6 +73,11 @@ Base.push!(scene::Scene, robj::RenderObject) = push!(scene.render_objects, robj)
 destroy(scene::Scene) = destroy.(scene.render_objects)
 
 camera(scene::Scene) = scene.camera
+function render(scene::Scene)
+    for robj in scene.render_objects
+        render(robj)
+    end
+end
 
 
 # TODO
