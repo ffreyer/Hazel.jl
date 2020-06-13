@@ -56,6 +56,11 @@ function render(r::RenderObject)
     Hazel.draw_indexed(Hazel.RenderCommand, r.vertex_array)
 end
 
+Base.getindex(r::RenderObject, key::String) = getindex(r.uniforms, key)
+function Base.setindex!(r::RenderObject, value, key::String)
+    setindex!(r.uniforms, value, key)
+end
+
 
 abstract type AbstractScene end
 struct Scene{

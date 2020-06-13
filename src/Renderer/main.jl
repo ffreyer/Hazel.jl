@@ -52,10 +52,10 @@ include("Shader.jl")
 # VertexArray Interface & docs
 include("VertexArray.jl")
 
+# AbstractTexture
+include("Texture.jl")
+
 # "high"-level Renderer implementation
 include("Scene.jl")
 include("Renderer.jl")
 include("Renderer2D.jl")
-
-
-include("Texture.jl")

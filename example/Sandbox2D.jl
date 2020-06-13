@@ -1,4 +1,4 @@
-using Hazel, LinearAlgebra
+using Revise, Hazel, LinearAlgebra
 
 
 struct Sandbox2DLayer{
@@ -11,7 +11,6 @@ struct Sandbox2DLayer{
 
     # Temporary
     scene::Hazel.Scene
-    color::Vector{Float32}
 end
 
 function Sandbox2DLayer(name = "Sandbox2D")
@@ -21,23 +20,26 @@ function Sandbox2DLayer(name = "Sandbox2D")
     )
 
     # Square
-    scene = Hazel.Scene(
-        camera_controller.camera,
-        Hazel.Renderer2D.Quad(Vec2f0(-0.5), Vec2f0(1))
-    )
+    robj1 = Hazel.Renderer2D.Quad(Vec2f0(-1.0), Vec2f0(1.5), u_color=Vec4f0(0))
 
     # What a dirty hack lol
     color = Float32[0.2, 0.4, 0.8, 1.0]
     @eval function Hazel.render(l::ImGuiLayer)
         Hazel.CImGui.ColorEdit4("Square color", $color)
+        $(robj1)["u_color"] = Vec4f0($color...)
     end
 
+    # Square
+    texture = Hazel.Texture2D(joinpath(Hazel.assetpath, "textures", "Checkerboard.png"))
+    Hazel.bind(texture)
+    robj2 = Hazel.Renderer2D.Quad(Vec3f0(0, 0, .1), Vec3f0(1, 1, 0), u_texture=Int32(0))
+    scene = Hazel.Scene(camera_controller.camera, robj1, robj2)
 
     Sandbox2DLayer(
         Ref{Hazel.BasicApplication}(),
         name,
         camera_controller,
-        scene, color
+        scene
     )
 end
 
@@ -54,7 +56,7 @@ function Hazel.update!(l::Sandbox2DLayer, dt)
 
     update!(l.camera_controller, app, dt)
     Hazel.clear(Hazel.RenderCommand)
-    Hazel.Renderer2D.submit(l.scene, u_color = Vec4f0(l.color))
+    Hazel.Renderer2D.submit(l.scene)
 
     nothing
 end

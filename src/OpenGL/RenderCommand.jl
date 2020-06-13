@@ -13,6 +13,7 @@ const RenderCommand = OpenGLRenderCommand()
 function init!(r::OpenGLRenderCommand; kwargs...)
     glEnable(GL_BLEND)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+    glEnable(GL_DEPTH_TEST);
 end
 
 clear(r::OpenGLRenderCommand, color::Colorant) = clear(r, RGBA(color))
