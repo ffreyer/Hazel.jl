@@ -171,11 +171,10 @@ function upload!(shader::Shader, name::String, v)
 end
 
 # Mappings to OpenGL functions
-function _upload!(shader::Shader, location, value::Int32)
-    glUniform1i(location, value)
-end
-function _upload!(shader::Shader, location, value::Float32)
-    glUniform1f(location, value)
+for (type, typename) in (Float32 => :f, Int32 => :i, UInt32 => :ui)
+    @eval function _upload!(shader::Shader, location, v::$type)
+        $(Symbol(:glUniform1, typename))(location, v)
+    end
 end
 
 for N in 2:4
@@ -195,6 +194,18 @@ for N in 2:4
             )
         end
     end
+end
+
+# Texture:
+# (target, texture)
+function _upload!(shader::Shader, location, t::AbstractTexture)
+    _upload!(shader, location, (UInt32(0), t))
+end
+function _upload!(shader::Shader, location, t::Tuple{<:Integer, <:AbstractTexture})
+    activeTarget = GL_TEXTURE0 + UInt32(t[1])
+    glActiveTexture(activeTarget)
+    bind(t[2])
+    _upload!(shader, location, activeTarget)
 end
 
 

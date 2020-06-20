@@ -31,8 +31,10 @@ function Sandbox2DLayer(name = "Sandbox2D")
 
     # Square
     texture = Hazel.Texture2D(joinpath(Hazel.assetpath, "textures", "Checkerboard.png"))
-    Hazel.bind(texture)
-    robj2 = Hazel.Renderer2D.Quad(Vec3f0(0, 0, .1), Vec3f0(1, 1, 0), u_texture=Int32(0))
+    robj2 = Hazel.Renderer2D.Quad(
+        Vec3f0(0, 0, .1), Vec3f0(1, 1, 0),
+        u_texture = (0, texture), u_color = Vec4f0(1, 0.8, 0.7, 1.0)
+    )
     scene = Hazel.Scene(camera_controller.camera, robj1, robj2)
 
     Sandbox2DLayer(

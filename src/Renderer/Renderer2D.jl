@@ -3,12 +3,16 @@ module Renderer2D
 
 using ..Hazel
 
+
 """
     Renderer.init!([; kwargs...])
 
 Intializes/Configures the renderer.
 """
-init!(kwargs...) = Hazel.init!(Hazel.RenderCommand, kwargs...)
+function init!(kwargs...)
+    Hazel.init!(Hazel.RenderCommand, kwargs...)
+    nothing
+end
 
 resize!(width, height) = Hazel.viewport(r.rc, 0, 0, width, height)
 
@@ -48,23 +52,16 @@ function Quad(p::Vec3f0, w::Vec3f0; kwargs...)
     uniforms = Dict{String, Any}(Pair(string(k), v) for (k, v) in kwargs)
     uniforms["u_transform"] = transform
 
-    if haskey(uniforms, "u_texture")
-        vertices = Float32[0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1]
-        layout = Hazel.BufferLayout(position = Point2f0, uv = Point2f0)
-    else
-        vertices = Float32[0, 0, 1, 0, 0, 1, 1, 1]
-        layout = Hazel.BufferLayout(position = Point2f0)
-    end
+    vertices = Float32[0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1]
+    layout = Hazel.BufferLayout(position = Point2f0, uv = Point2f0)
     vertex_buffer = Hazel.VertexBuffer(vertices, layout)
     index_buffer = Hazel.IndexBuffer(UInt32[0, 1, 2, 1, 2, 3])
 
-    if haskey(uniforms, "u_color")
-        shader = Hazel.Shader(joinpath(Hazel.assetpath, "shaders", "flat_color.glsl"))
-    elseif haskey(uniforms, "u_texture")
-        shader = Hazel.Shader(joinpath(Hazel.assetpath, "shaders", "texture.glsl"))
-    else
-        throw(ErrorException("Neither 'u_color' nor 'u_texture' has been passed."))
+    haskey(uniforms, "u_color") || (uniforms["u_color"] = Vec4f0(1))
+    if !haskey(uniforms, "u_texture")
+        uniforms["u_texture"] = Hazel.Texture2D(fill(RGBA(1, 1, 1, 1), 1, 1))
     end
+    shader = Hazel.Shader(joinpath(Hazel.assetpath, "shaders", "texture.glsl"))
 
     Hazel.RenderObject(
         shader,

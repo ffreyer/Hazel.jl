@@ -1,37 +1,60 @@
-struct Texture2D <: AbstractTexture
+struct Texture2D{CT <: Colorant} <: AbstractTexture
     path::String
     size::Tuple{UInt32, UInt32}
     id::UInt32
+    internal_format::UInt32
+    data_format::UInt32
 end
 
 function Texture2D(path::String, slot = 0)
     # may be the wrong kind of flip
     formated = load(path)'[1:end, end:-1:1]
-    _size = UInt32.(size(formated))
-    if eltype(formated) <: RGB
-        img = [UInt8(x.i) for c in formated for x in (c.r, c.g, c.b)]
-        bytetype = GL_RGB8
-        type = GL_RGB
-    elseif eltype(formated) <: RGBA
-        img = [UInt8(x.i) for c in formated for x in (c.r, c.g, c.b, c.alpha)]
-        bytetype = GL_RGBA8
-        type = GL_RGBA
+    Texture2D(formated, path=path)
+end
+
+function Texture2D(img::Matrix{CT}; path="") where {CT <: Union{RGB, RGBA}}
+    _size = UInt32.(size(img))
+    if eltype(img) <: RGB
+        _img = [UInt8(x.i) for c in img for x in (c.r, c.g, c.b)]
+        internal_format = GL_RGB8
+        data_format = GL_RGB
+    elseif eltype(img) <: RGBA
+        _img = [UInt8(x.i) for c in img for x in (c.r, c.g, c.b, c.alpha)]
+        internal_format = GL_RGBA8
+        data_format = GL_RGBA
     else
-        throw(ErrorException("Image color data format $(eltype(formated)) not implemented."))
+        throw(ErrorException("Image color data format $(eltype(img)) not implemented."))
     end
 
     r = Ref{UInt32}()
     glGenTextures(1, r)
     id = r[]
     glBindTexture(GL_TEXTURE_2D, id)
+    glTexStorage2D(GL_TEXTURE_2D, 1, internal_format, _size...)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-    glTexImage2D(GL_TEXTURE_2D, 0, type, _size..., 0, type, GL_UNSIGNED_BYTE, img)
 
-    Texture2D(path, _size, id)
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _size..., data_format, GL_UNSIGNED_BYTE, _img)
+    #glTexImage2D(GL_TEXTURE_2D, 0, type, _size..., 0, type, GL_UNSIGNED_BYTE, _img)
+
+    Texture2D{eltype(img)}(path, _size, id, internal_format, data_format)
 end
 width(t::Texture2D) = t.size[1]
 height(t::Texture2D) = t.size[2]
 bind(t::Texture2D) = glBindTexture(GL_TEXTURE_2D, t.id) #glBindTextureUnit
 unbind(t::Texture2D) = glBindTexture(GL_TEXTURE_2D, 0) #glBindTextureUnit
 destroy(t::Texture2D) = glDeleteTextures(id)
+
+img2bytes(img::Matrix{RGBA}) = [UInt8(x.i) for c in img for x in (c.r, c.g, c.b, c.alpha)]
+img2bytes(img::Matrix{RGB}) = [UInt8(x.i) for c in img for x in (c.r, c.g, c.b)]
+
+function upload(t::Texture2D{CT}, img::Matrix{CT}) where {CT <: Colorant}
+    t.size != size(img) && throw(DimensionMismatch("Image and Texture have different size!"))
+    bind(t)
+    glTexSubImage2D(
+        GL_TEXTURE_2D, 0,
+        0, 0, t.size...,
+        t.data_format, GL_UNSIGNED_BYTE,
+        img2bytes(img)
+    )
+end
