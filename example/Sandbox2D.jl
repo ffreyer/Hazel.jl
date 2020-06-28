@@ -1,5 +1,10 @@
-using Revise, Hazel, LinearAlgebra
+using Revise, Hazel, LinearAlgebra, Printf
 
+
+struct ProfileResult
+    name::String
+    time::Float64
+end
 
 struct Sandbox2DLayer{
         AT <: Hazel.AbstractApplication
@@ -8,6 +13,8 @@ struct Sandbox2DLayer{
     app::Ref{AT}
     name::String
     camera_controller::Hazel.OrthographicCameraController
+
+    profile_results::Vector{ProfileResult}
 
     # Temporary
     scene::Hazel.Scene
@@ -22,11 +29,24 @@ function Sandbox2DLayer(name = "Sandbox2D")
     # Square
     robj1 = Hazel.Renderer2D.Quad(Vec2f0(-1.0), Vec2f0(1.5), u_color=Vec4f0(0))
 
+    # TODO
     # What a dirty hack lol
     color = Float32[0.2, 0.4, 0.8, 1.0]
+    profile_results = ProfileResult[]
     @eval function Hazel.render(l::ImGuiLayer)
         Hazel.CImGui.ColorEdit4("Square color", $color)
         $(robj1)["u_color"] = Vec4f0($color...)
+
+        True = true
+        Hazel.CImGui.@c Hazel.CImGui.ShowDemoWindow(&True)
+
+        for result in $profile_results
+            s = @sprintf("%s  %0.3f", result.name, 1000result.time)
+            Hazel.CImGui.TextColored(Hazel.CImGui.ImVec4(1,1,1, 1), s)
+        end
+        empty!($profile_results)
+
+        nothing
     end
 
     # Square
@@ -41,6 +61,7 @@ function Sandbox2DLayer(name = "Sandbox2D")
         Ref{Hazel.BasicApplication}(),
         name,
         camera_controller,
+        profile_results,
         scene
     )
 end
@@ -54,11 +75,18 @@ end
 
 
 function Hazel.update!(l::Sandbox2DLayer, dt)
+    t = time()
+
     app = l.app[]
 
+    t2 = time()
     update!(l.camera_controller, app, dt)
+    t3 = time()
     Hazel.clear(Hazel.RenderCommand)
     Hazel.Renderer2D.submit(l.scene)
+
+    push!(l.profile_results, ProfileResult("update!(Sandbox2DLayer)", time()-t))
+    push!(l.profile_results, ProfileResult("update!(CameraController)", t3-t2))
 
     nothing
 end

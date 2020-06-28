@@ -17,8 +17,6 @@ function BasicApplication()
         MutableLayerStack()
     )
 
-    init!(app)
-
     @info (glGetString(GL_VENDOR) |> unsafe_string)
     @info (glGetString(GL_RENDERER) |> unsafe_string)
     @info (glGetString(GL_VERSION) |> unsafe_string)
@@ -62,13 +60,13 @@ function renderloop(app::AbstractApplication)
             yield()
         end
         yield()
-        destroy.(app.layerstack)
-        empty!(app.layerstack, app)
     catch e
         ce = CapturedException(e, Base.catch_backtrace())
         @error "Error in renderloop!" exception=ce
         rethrow(e)
     finally
+        destroy.(app.layerstack)
+        empty!(app.layerstack, app)
         destroy(window(app))
     end
 end
