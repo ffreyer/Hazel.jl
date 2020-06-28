@@ -30,7 +30,7 @@ Intializes/Configures the renderer.
 """
 init!(kwargs...) = Hazel.init!(Hazel.RenderCommand, kwargs...)
 
-resize!(width, height) = Hazel.viewport(r.rc, 0, 0, width, height)
+resize!(width, height) = Hazel.viewport(Hazel.RenderCommand, 0, 0, width, height)
 
 """
     Renderer.submit(scene[; uniforms])

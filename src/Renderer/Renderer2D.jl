@@ -14,7 +14,7 @@ function init!(kwargs...)
     nothing
 end
 
-resize!(width, height) = Hazel.viewport(r.rc, 0, 0, width, height)
+resize!(width, height) = Hazel.viewport(Hazel.RenderCommand, 0, 0, width, height)
 
 """
     Renderer2D.submit(scene[; uniforms])
