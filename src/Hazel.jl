@@ -14,12 +14,19 @@ using Reexport
 @reexport using GeometryTypes, Colors
 using StaticArrays, Quaternions
 using FileIO, ImageIO, FixedPointNumbers, ImageMagick # loading png files
+using TimerOutputs
+export print_timer, reset_timer!
 
 # projection stuff
 include("math/math.jl")
 
+# TODO get rid of this?
 # @backend macro
 include("backend_error.jl")
+
+# currently just benchmarking/TimerOutputs extras
+include("debug/Instrumentation.jl")
+export @HZ_profile
 
 # TODO
 # figure out where to put this
