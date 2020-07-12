@@ -21,7 +21,7 @@ Constructs a VertexBuffer with the given `vertices` and `layout`.
 There is explicit cleanup required! Call ´destroy(vertex_buffer)´ to remove it
 from the gpu.
 """
-function VertexBuffer(vertices, layout::BufferLayout)
+@HZ_profile function VertexBuffer(vertices, layout::BufferLayout)
     id = Ref{UInt32}()
     # No glCreateBuffer in ModernGL :(
     glGenBuffers(1, id)
@@ -29,8 +29,8 @@ function VertexBuffer(vertices, layout::BufferLayout)
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW)
     VertexBuffer(id, layout)
 end
-bind(buffer::VertexBuffer) = glBindBuffer(GL_ARRAY_BUFFER, buffer.id[])
-unbind(buffer::VertexBuffer) = glBindBuffer(GL_ARRAY_BUFFER, 0)
+@HZ_profile bind(buffer::VertexBuffer) = glBindBuffer(GL_ARRAY_BUFFER, buffer.id[])
+@HZ_profile unbind(buffer::VertexBuffer) = glBindBuffer(GL_ARRAY_BUFFER, 0)
 destroy(buffer::VertexBuffer) = glDeleteBuffers(1, buffer.id)
 layout(vb::VertexBuffer) = vb.layout
 
@@ -55,7 +55,7 @@ Constructs a IndexBuffer with the given `indices`.
 There is explicit cleanup required! Call ´delete!(index_buffer)´ to remove it
 from the gpu.
 """
-function IndexBuffer(indices)
+@HZ_profile function IndexBuffer(indices)
     id = Ref{UInt32}()
     # No glCreateBuffer in ModernGL :(
     glGenBuffers(1, id)
@@ -63,7 +63,7 @@ function IndexBuffer(indices)
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW)
     IndexBuffer(id, length(indices))
 end
-bind(buffer::IndexBuffer) = glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer.id[])
-unbind(buffer::IndexBuffer) = glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
+@HZ_profile bind(buffer::IndexBuffer) = glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer.id[])
+@HZ_profile unbind(buffer::IndexBuffer) = glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
 destroy(buffer::IndexBuffer) = glDeleteBuffers(1, buffer.id)
 Base.length(buffer::IndexBuffer) = buffer.length

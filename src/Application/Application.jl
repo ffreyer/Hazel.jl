@@ -8,7 +8,7 @@ mutable struct BasicApplication <: AbstractApplication
     # allow MutableLayerStack -> StaticLayerStack
     layerstack::AbstractLayerStack
 end
-function BasicApplication()
+@HZ_profile function BasicApplication()
     @info "Application starting up"
 
     app = BasicApplication(
@@ -25,7 +25,7 @@ function BasicApplication()
 end
 
 
-function init!(app::BasicApplication)
+@HZ_profile function init!(app::BasicApplication)
     if !isdefined(app, :window) || !isopen(app.window)
         app.window = Window(e -> handle!(app, e))
     end
@@ -43,21 +43,23 @@ function renderloop(app::AbstractApplication)
     try
         t = time()
         while app.running
-            new_t = time()
-            dt = new_t - t
-            t = new_t
+            @HZ_profile "renderloop" begin
+                new_t = time()
+                dt = new_t - t
+                t = new_t
 
-            if !app.minimized
-                # Render layers in order (bottom to top)
-                for layer in app.layerstack
-                    update!(layer, dt)
+                if !app.minimized
+                    # Render layers in order (bottom to top)
+                    for layer in app.layerstack
+                        update!(layer, dt)
+                    end
                 end
+
+                # This also polls events
+                update!(app.window, dt)
+
+                yield()
             end
-
-            # This also polls events
-            update!(app.window, dt)
-
-            yield()
         end
         yield()
     catch e
@@ -81,7 +83,7 @@ function destroy(app::AbstractApplication)
     nothing
 end
 
-function handle!(app::AbstractApplication, event::AbstractEvent)
+@HZ_profile function handle!(app::AbstractApplication, event::AbstractEvent)
     # handle! returns true if the event has been processed
     handle!(window(app), event) && return true
     event isa WindowMinimizedEvent && minimize!(app)
@@ -133,7 +135,7 @@ function restore!(app::AbstractApplication)
     app.minimized = false
     false
 end
-function resize!(app::AbstractApplication, width, height)
+@HZ_profile function resize!(app::AbstractApplication, width, height)
     Renderer.resize!(width, height)
     false
 end

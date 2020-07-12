@@ -33,7 +33,7 @@ function Sandbox2DLayer(name = "Sandbox2D")
     # end
     # or set callbacks? But that's not very dispatch-y
     color = Float32[0.2, 0.4, 0.8, 1.0]
-    @eval function Hazel.render(l::ImGuiLayer)
+    @eval function Hazel.render(l::Hazel.ImGuiLayer)
         Hazel.CImGui.ColorEdit4("Square color", $color)
         $(robj1)["u_color"] = Vec4f0($color...)
 
@@ -87,7 +87,7 @@ Hazel.destroy(l::Sandbox2DLayer) = Hazel.destroy(l.scene)
 Hazel.string(l::Sandbox2DLayer) = l.name
 
 
-Hazel.enable_profiling()
+# Hazel.enable_profiling()
 
 app = Hazel.BasicApplication()
 push!(app, Sandbox2DLayer())

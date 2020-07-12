@@ -21,10 +21,10 @@ function Window(
     )
     Window(WindowProperties(name, width, height, true), event_callback, vsync=vsync)
 end
-function Window(props::WindowProperties, event_callback::Function; vsync=true)
+@HZ_profile function Window(props::WindowProperties, event_callback::Function; vsync=true)
     @info "Creating window $(props.title) ($(props.width), $(props.height))"
 
-    glfw_window = GLFW.CreateWindow(props.width, props.height, props.title)
+    @HZ_profile "GLFW.CreateWindow" glfw_window = GLFW.CreateWindow(props.width, props.height, props.title)
     context = GLFWContext(glfw_window)
     init(context) # GLFW.MakeContextCurrent(glfw_window)
     window = Window(context, props)
@@ -70,7 +70,7 @@ function Window(props::WindowProperties, event_callback::Function; vsync=true)
     window
 end
 
-function destroy(window::Window)
+@HZ_profile function destroy(window::Window)
     window.properties.isopen = false
     GLFW.DestroyWindow(native_window(window))
     nothing
@@ -80,7 +80,7 @@ enable_vsync(window::Window) = GLFW.SwapInterval(1)
 disable_vsync(window::Window) = GLFW.SwapInterval(0)
 
 
-function update!(window::Window, dt)
+@HZ_profile function update!(window::Window, dt)
     GLFW.PollEvents()
     swap_buffers(window.context)
     nothing

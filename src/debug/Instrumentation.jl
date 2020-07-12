@@ -2,6 +2,24 @@
 # We probably want to record N timing for every block,
 # so that we can generate real tiem performance graphs
 
+# Cherno's implementation is this:
+# https://gist.github.com/TheCherno/31f135eea6ee729ab5f26a6908eb3a5e
+
+# Btw, file writes are actually rather fast
+# julia> @benchmark write($file, $msg)
+# BenchmarkTools.Trial:
+#   memory estimate:  0 bytes
+#   allocs estimate:  0
+#   --------------
+#   minimum time:     38.246 ns (0.00% GC)
+#   median time:      41.535 ns (0.00% GC)
+#   mean time:        47.561 ns (0.00% GC)
+#   maximum time:     180.706 ns (0.00% GC)
+#   --------------
+#   samples:          10000
+#   evals/sample:     991
+
+
 """
     @HZ_profile function ... end
     @HZ_profile foo(args...) = ...

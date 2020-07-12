@@ -12,7 +12,7 @@ function Texture2D(path::String, slot = 0)
     Texture2D(formated, path=path)
 end
 
-function Texture2D(img::Matrix{CT}; path="") where {CT <: Union{RGB, RGBA}}
+@HZ_profile function Texture2D(img::Matrix{CT}; path="") where {CT <: Union{RGB, RGBA}}
     _size = UInt32.(size(img))
     if eltype(img) <: RGB
         _img = [UInt8(x.i) for c in img for x in (c.r, c.g, c.b)]
@@ -41,14 +41,14 @@ function Texture2D(img::Matrix{CT}; path="") where {CT <: Union{RGB, RGBA}}
 end
 width(t::Texture2D) = t.size[1]
 height(t::Texture2D) = t.size[2]
-bind(t::Texture2D) = glBindTexture(GL_TEXTURE_2D, t.id) #glBindTextureUnit
-unbind(t::Texture2D) = glBindTexture(GL_TEXTURE_2D, 0) #glBindTextureUnit
+@HZ_profile bind(t::Texture2D) = glBindTexture(GL_TEXTURE_2D, t.id) #glBindTextureUnit
+@HZ_profile unbind(t::Texture2D) = glBindTexture(GL_TEXTURE_2D, 0) #glBindTextureUnit
 destroy(t::Texture2D) = glDeleteTextures(id)
 
 img2bytes(img::Matrix{RGBA}) = [UInt8(x.i) for c in img for x in (c.r, c.g, c.b, c.alpha)]
 img2bytes(img::Matrix{RGB}) = [UInt8(x.i) for c in img for x in (c.r, c.g, c.b)]
 
-function upload(t::Texture2D{CT}, img::Matrix{CT}) where {CT <: Colorant}
+@HZ_profile function upload(t::Texture2D{CT}, img::Matrix{CT}) where {CT <: Colorant}
     t.size != size(img) && throw(DimensionMismatch("Image and Texture have different size!"))
     bind(t)
     glTexSubImage2D(

@@ -17,12 +17,12 @@ function init!(r::OpenGLRenderCommand; kwargs...)
 end
 
 clear(r::OpenGLRenderCommand, color::Colorant) = clear(r, RGBA(color))
-function clear(::OpenGLRenderCommand, color::RGBA = RGBA(0.1, 0.1, 0.1, 1.0))
+@HZ_profile function clear(::OpenGLRenderCommand, color::RGBA = RGBA(0.1, 0.1, 0.1, 1.0))
     glClearColor(color.r, color.g , color.b, color.alpha)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 end
 
-function draw_indexed(::OpenGLRenderCommand, va::VertexArray)
+@HZ_profile function draw_indexed(::OpenGLRenderCommand, va::VertexArray)
     glDrawElements(
         GL_TRIANGLES,
         length(index_buffer(va)),

@@ -21,7 +21,7 @@ resize!(width, height) = Hazel.viewport(Hazel.RenderCommand, 0, 0, width, height
 
 Draws a `scene` with the given uniforms.
 """
-function submit(scene::Hazel.AbstractScene; kwargs...)
+@HZ_profile function submit(scene::Hazel.AbstractScene; kwargs...)
     for robj in scene.render_objects
         submit(robj, u_projection_view = Hazel.projection_view(scene.camera); kwargs...)
     end
@@ -33,7 +33,7 @@ end
 
 Draws a `render_object` with the given uniforms.
 """
-function submit(robj::Hazel.RenderObject; kwargs...)
+@HZ_profile function submit(robj::Hazel.RenderObject; kwargs...)
     Hazel.bind(robj)
     for (name, value) in kwargs
         Hazel.upload!(robj.shader, name, value)
@@ -47,7 +47,7 @@ end
 function Quad(position::Vec2, widths::Vec2; uniforms...)
     Quad(Vec3f0(position..., 0), Vec3f0(widths..., 0); uniforms...)
 end
-function Quad(p::Vec3f0, w::Vec3f0; kwargs...)
+@HZ_profile function Quad(p::Vec3f0, w::Vec3f0; kwargs...)
     transform = Hazel.translationmatrix(p) * Hazel.scalematrix(w)
     uniforms = Dict{String, Any}(Pair(string(k), v) for (k, v) in kwargs)
     uniforms["u_transform"] = transform

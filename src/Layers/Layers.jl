@@ -143,7 +143,7 @@ Base.eltype(::Type{AbstractLayerStack}) = AbstractLayer
 Base.first(ls::AbstractLayerStack) = first(ls.layers)
 Base.last(ls::AbstractLayerStack) = last(ls.overlayers)
 
-function Base.iterate(ls::AbstractLayerStack)
+@HZ_profile function Base.iterate(ls::AbstractLayerStack)
     if length(ls) == 0
         return nothing
     elseif length(ls.layers) != 0
@@ -163,7 +163,7 @@ function Base.iterate(ls::AbstractLayerStack, index)
     end
 end
 
-function Base.iterate(rls::Iterators.Reverse{T}) where {T <: AbstractLayerStack}
+@HZ_profile function Base.iterate(rls::Iterators.Reverse{T}) where {T <: AbstractLayerStack}
     L = length(rls.itr)
     if L == 0
         return nothing

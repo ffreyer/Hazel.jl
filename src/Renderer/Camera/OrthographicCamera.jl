@@ -9,7 +9,7 @@ end
 
 Creates an orthographic camera.
 """
-function OrthographicCamera(
+@HZ_profile function OrthographicCamera(
         left::T, right::T, bottom::T, top::T, znear=T(-1), zfar=T(1)
     ) where {T}
 
@@ -19,10 +19,10 @@ function OrthographicCamera(
     OrthographicCamera(projection, view, projection_view)
 end
 
-function recalculate!(cam::OrthographicCamera)
+@HZ_profile function recalculate!(cam::OrthographicCamera)
     cam.projection_view = cam.projection * cam.view
 end
-function recalculate_view!(
+@HZ_profile function recalculate_view!(
         cam::OrthographicCamera{T}, position::Vec3{T}, rotation::T
     ) where {T}
     cam.view =

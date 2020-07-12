@@ -1,5 +1,5 @@
 mutable struct ImGuiLayer <: AbstractLayer
-    context::Ptr{Nothing}
+    context::Ptr{CImGui.ImGuiContext}
     glfw_window::GLFW.Window
     ImGuiLayer() = new(C_NULL)
 end
@@ -62,7 +62,7 @@ function End(l::ImGuiLayer)
     nothing
 end
 
-function update!(l::ImGuiLayer, dt)
+@HZ_profile function update!(l::ImGuiLayer, dt)
     # @warn "Update ImGuiLayer"
     Begin(l)
     render(l)
@@ -73,7 +73,7 @@ end
 
 # ?CImGui.IsWindowHovered # says
 # You should always pass your mouse/keyboard inputs to imgui
-function handle!(l::ImGuiLayer, e::KeyPressedEvent{key}) where {key}
+@HZ_profile function handle!(l::ImGuiLayer, e::KeyPressedEvent{key}) where {key}
     CImGui.GLFWBackend.ImGui_ImplGlfw_KeyCallback(
         l.glfw_window,
         GLFW.Key(Cint(key)), e.scancode,
@@ -81,25 +81,25 @@ function handle!(l::ImGuiLayer, e::KeyPressedEvent{key}) where {key}
     )
     CImGui.Get_WantCaptureKeyboard(CImGui.GetIO())
 end
-function handle!(l::ImGuiLayer, e::KeyReleasedEvent{key}) where {key}
+@HZ_profile function handle!(l::ImGuiLayer, e::KeyReleasedEvent{key}) where {key}
     CImGui.GLFWBackend.ImGui_ImplGlfw_KeyCallback(
         l.glfw_window, GLFW.Key(Cint(key)), e.scancode, GLFW.RELEASE, e.mods
     )
     CImGui.Get_WantCaptureKeyboard(CImGui.GetIO())
 end
-function handle!(l::ImGuiLayer, e::MouseButtonPressedEvent{button}) where {button}
+@HZ_profile function handle!(l::ImGuiLayer, e::MouseButtonPressedEvent{button}) where {button}
     CImGui.GLFWBackend.ImGui_ImplGlfw_MouseButtonCallback(
         l.glfw_window, GLFW.MouseButton(Cint(button)), GLFW.PRESS, e.mods
     )
     CImGui.Get_WantCaptureMouse(CImGui.GetIO())
 end
-function handle!(l::ImGuiLayer, e::MouseButtonReleasedEvent{button}) where {button}
+@HZ_profile function handle!(l::ImGuiLayer, e::MouseButtonReleasedEvent{button}) where {button}
     CImGui.GLFWBackend.ImGui_ImplGlfw_MouseButtonCallback(
         l.glfw_window, GLFW.MouseButton(Cint(button)), GLFW.RELEASE, e.mods
     )
     CImGui.Get_WantCaptureMouse(CImGui.GetIO())
 end
-function handle!(l::ImGuiLayer, e::MouseScrolledEvent)
+@HZ_profile function handle!(l::ImGuiLayer, e::MouseScrolledEvent)
     CImGui.GLFWBackend.ImGui_ImplGlfw_ScrollCallback(l.glfw_window, e.dx, e.dy)
     CImGui.Get_WantCaptureMouse(CImGui.GetIO())
 end

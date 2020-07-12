@@ -12,7 +12,7 @@ struct RenderObject{S <: AbstractShader, VA <: AbstractVertexArray}
     vertex_array::VA
     uniforms::Dict{String, Any}
 
-    function RenderObject(
+    @HZ_profile function RenderObject(
             shader::S,
             vertex_array::VA,
             uniforms::Dict{String, Any}
@@ -33,11 +33,11 @@ function RenderObject(shader, vertex_array; kwargs...)
     )
 end
 
-function bind(r::RenderObject)
+@HZ_profile function bind(r::RenderObject)
     bind(r.shader)
     bind(r.vertex_array)
 end
-function unbind(r::RenderObject)
+@HZ_profile function unbind(r::RenderObject)
     unbind(r.shader)
     unbind(r.vertex_array)
 end
@@ -48,7 +48,7 @@ function destroy(r::RenderObject)
     destroy(r.vertex_array)
 end
 
-function render(r::RenderObject)
+@HZ_profile function render(r::RenderObject)
     # This
     for (k, v) in r.uniforms
         Hazel.upload!(r.shader, k, v)
@@ -57,7 +57,7 @@ function render(r::RenderObject)
 end
 
 Base.getindex(r::RenderObject, key::String) = getindex(r.uniforms, key)
-function Base.setindex!(r::RenderObject, value, key::String)
+@HZ_profile function Base.setindex!(r::RenderObject, value, key::String)
     setindex!(r.uniforms, value, key)
 end
 
@@ -72,13 +72,13 @@ end
 """
     Scene(camera[, render_objects])
 """
-Scene(camera::AbstractCamera) = Scene(camera, RenderObject[])
-Scene(camera::AbstractCamera, robjs::RenderObject...) = Scene(camera, RenderObject[robjs...])
+@HZ_profile Scene(camera::AbstractCamera) = Scene(camera, RenderObject[])
+@HZ_profile Scene(camera::AbstractCamera, robjs::RenderObject...) = Scene(camera, RenderObject[robjs...])
 Base.push!(scene::Scene, robj::RenderObject) = push!(scene.render_objects, robj)
 destroy(scene::Scene) = destroy.(scene.render_objects)
 
 camera(scene::Scene) = scene.camera
-function render(scene::Scene)
+@HZ_profile function render(scene::Scene)
     for robj in scene.render_objects
         render(robj)
     end

@@ -16,7 +16,7 @@ Constructs a VertexArray from `vertex_buffer` and `index_buffer`
 There is explicit cleanup required! Call ´destroy(vertex_array)´ to remove it
 from the gpu.
 """
-function VertexArray(vertex_buffer::VertexBuffer, index_buffer::IndexBuffer)
+@HZ_profile function VertexArray(vertex_buffer::VertexBuffer, index_buffer::IndexBuffer)
     id = Ref{UInt32}()
     glGenVertexArrays(1, id)
 
@@ -40,8 +40,8 @@ function VertexArray(vertex_buffer::VertexBuffer, index_buffer::IndexBuffer)
 
     VertexArray(vertex_buffer, index_buffer, id)
 end
-bind(va::VertexArray) = glBindVertexArray(va.id[])
-unbind(va::VertexArray) = glBindVertexArray(0)
+@HZ_profile bind(va::VertexArray) = glBindVertexArray(va.id[])
+@HZ_profile unbind(va::VertexArray) = glBindVertexArray(0)
 function destroy(va::VertexArray)
     glDeleteVertexArrays(1, va.id)
     destroy(va.vb)

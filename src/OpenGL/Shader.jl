@@ -19,7 +19,7 @@ be used to mark the type of shader.
 There is explicit cleanup required! Call ´destroy(shader)´ to remove it
 from the gpu.
 """
-function Shader(path::String; debug=false, name=_name_from_file(path))
+@HZ_profile function Shader(path::String; debug=false, name=_name_from_file(path))
     sources = Pair{UInt32, String}[]
     open(path, "r") do file
         source = ""
@@ -153,8 +153,8 @@ function compile(sources::Vector{Pair{UInt32, String}}; name::String)
 end
 
 destroy(shader::Shader) = glDeleteProgram(shader.id[])
-bind(shader::Shader) = glUseProgram(shader.id[])
-unbind(shader::Shader) = glUseProgram(0)
+@HZ_profile bind(shader::Shader) = glUseProgram(shader.id[])
+@HZ_profile unbind(shader::Shader) = glUseProgram(0)
 name(shader::Shader) = shader.name
 
 
@@ -164,7 +164,7 @@ function upload!(shader::Shader; kwargs...)
     end
 end
 upload!(shader::Shader, name::Symbol, v) = upload!(shader, string(name), v)
-function upload!(shader::Shader, name::String, v)
+@HZ_profile function upload!(shader::Shader, name::String, v)
     location = glGetUniformLocation(shader.id[], name)
     location == -1 && throw(ErrorException("$name is not a valid uniform name!"))
     _upload!(shader, location, v)
@@ -172,7 +172,7 @@ end
 
 # Mappings to OpenGL functions
 for (type, typename) in (Float32 => :f, Int32 => :i, UInt32 => :ui)
-    @eval function _upload!(shader::Shader, location, v::$type)
+    @eval @HZ_profile function _upload!(shader::Shader, location, v::$type)
         $(Symbol(:glUniform1, typename))(location, v)
     end
 end
@@ -180,13 +180,13 @@ end
 for N in 2:4
     for (type, typename) in (Float32 => :f, Int32 => :i)
         # Vec{1..4, Int32/Float32} conversions
-        @eval function _upload!(shader::Shader, location, vec::Vec{$N, $type})
+        @eval @HZ_profile function _upload!(shader::Shader, location, vec::Vec{$N, $type})
             $(Symbol(:glUniform, N, typename))(location, vec...)
         end
     end
     for M in 2:4
         # Matrices
-        @eval function _upload!(shader::Shader, location,
+        @eval @HZ_profile function _upload!(shader::Shader, location,
                 matrix::SMatrix{$N, $M, Float32, $(N*M)}
             )
             $(Symbol(:glUniformMatrix, N == M ? N : "$(N)x$(M)", :fv))(
@@ -198,10 +198,10 @@ end
 
 # Texture:
 # (target, texture)
-function _upload!(shader::Shader, location, t::AbstractTexture)
+@HZ_profile function _upload!(shader::Shader, location, t::AbstractTexture)
     _upload!(shader, location, (UInt32(0), t))
 end
-function _upload!(shader::Shader, location, t::Tuple{<:Integer, <:AbstractTexture})
+@HZ_profile function _upload!(shader::Shader, location, t::Tuple{<:Integer, <:AbstractTexture})
     activeTarget = GL_TEXTURE0 + UInt32(t[1])
     glActiveTexture(activeTarget)
     bind(t[2])
@@ -213,7 +213,7 @@ end
 const ShaderLibrary = Dict{String, Shader}
 
 Base.push!(sl::ShaderLibrary, shader::Shader) = push!(sl, name(shader) => shader)
-function load!(
+@HZ_profile function load!(
         sl::ShaderLibrary, filepath::String;
         name=_name_from_file(filepath), kwargs...
     )
