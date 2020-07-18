@@ -38,35 +38,23 @@ function detach(l::ImGuiLayer, app::AbstractApplication)
     nothing
 end
 
-function Begin(l::ImGuiLayer)
-    CImGui.OpenGLBackend.ImGui_ImplOpenGL3_NewFrame()
-    CImGui.GLFWBackend.ImGui_ImplGlfw_NewFrame()
-    CImGui.NewFrame()
+@HZ_profile function Begin(l::ImGuiLayer)
+    @HZ_profile "OGL" begin CImGui.OpenGLBackend.ImGui_ImplOpenGL3_NewFrame() end
+    @HZ_profile "GLFW" begin CImGui.GLFWBackend.ImGui_ImplGlfw_NewFrame() end
+    @HZ_profile "Frame" begin CImGui.NewFrame() end
     nothing
 end
 
-function render(l::ImGuiLayer)
-    # CImGui.ShowDemoWindow(true)
+@HZ_profile update!(l::ImGuiLayer, other, dt) = nothing
+@HZ_profile function update!(l::ImGuiLayer, other::ImGuiLayer, dt)
     True = true
     CImGui.@c CImGui.ShowDemoWindow(&True)
     nothing
 end
 
-# function End(l::ImGuiLayer, app::AbstractApplication)
-function End(l::ImGuiLayer)
-    # io = CImGui.GetIO()
-    # window = native_window(window(app))
-    # io.DisplaySize = CImGui.ImVec2(window.properties.height)
+@HZ_profile function End(l::ImGuiLayer)
     CImGui.Render()
     CImGui.OpenGLBackend.ImGui_ImplOpenGL3_RenderDrawData(CImGui.GetDrawData())
-    nothing
-end
-
-@HZ_profile function update!(l::ImGuiLayer, dt)
-    # @warn "Update ImGuiLayer"
-    Begin(l)
-    render(l)
-    End(l)
     nothing
 end
 

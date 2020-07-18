@@ -48,10 +48,27 @@ function renderloop(app::AbstractApplication)
                 dt = new_t - t
                 t = new_t
 
-                if !app.minimized
+                @HZ_profile "Full Layer update!" if !app.minimized
                     # Render layers in order (bottom to top)
-                    for layer in app.layerstack
-                        update!(layer, dt)
+                    @HZ_profile "Normal Layer update!" begin
+                        for layer in app.layerstack
+                            update!(layer, dt)
+                        end
+                    end
+
+                    # NOTE
+                    # This is a bit of a hack
+                    # I'm assuming that all ImGui layers will be overlay layers
+                    @HZ_profile "ImGui Layer update!" begin
+                        for overlay in app.layerstack.overlayers
+                            if overlay isa ImGuiLayer
+                                Begin(overlay)
+                                for layer in app.layerstack
+                                    update!(overlay, layer, dt)
+                                end
+                                End(overlay)
+                            end
+                        end
                     end
                 end
 

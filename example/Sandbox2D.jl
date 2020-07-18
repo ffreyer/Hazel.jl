@@ -9,7 +9,7 @@ struct Sandbox2DLayer{
     name::String
     camera_controller::Hazel.OrthographicCameraController
 
-    # Temporary
+    color::Vector{Float32}
     scene::Hazel.Scene
 end
 
@@ -22,27 +22,6 @@ function Sandbox2DLayer(name = "Sandbox2D")
     # Square
     robj1 = Hazel.Renderer2D.MoveableQuad(Vec2f0(-1.0), Vec2f0(1.5))
     Hazel.rotateto!(robj1, 0.25pi)
-
-    # TODO
-    # What a dirty hack lol
-    # Just attach this to this layer ...
-    # There is no reason for this to be attached to the ImGui layer, is there?
-    # Well, actually there is - we need Begin and End around it
-    # maybe in ImGuiLayer update!():
-    # for layer in l.app.layerstack
-    #     renderImGui(l, layer)
-    # end
-    # or set callbacks? But that's not very dispatch-y
-    color = Float32[0.2, 0.4, 0.8, 1.0]
-    @eval function Hazel.render(l::Hazel.ImGuiLayer)
-        Hazel.CImGui.ColorEdit4("Square color", $color)
-        $(robj1)["u_color"] = Vec4f0($color...)
-
-        True = true
-        Hazel.CImGui.@c Hazel.CImGui.ShowDemoWindow(&True)
-
-        nothing
-    end
 
     # Square
     texture = Hazel.Texture2D(joinpath(Hazel.assetpath, "textures", "Checkerboard.png"))
@@ -57,6 +36,7 @@ function Sandbox2DLayer(name = "Sandbox2D")
         Ref{Hazel.BasicApplication}(),
         name,
         camera_controller,
+        Float32[0.2, 0.4, 0.8, 1.0],
         scene
     )
 end
@@ -77,6 +57,12 @@ Hazel.@HZ_profile function Hazel.update!(l::Sandbox2DLayer, dt)
         Hazel.clear(Hazel.RenderCommand)
         Hazel.Renderer2D.submit(l.scene)
     end
+    nothing
+end
+
+Hazel.@HZ_profile function Hazel.update!(gui_layer::Hazel.ImGuiLayer, sl::Sandbox2DLayer, dt)
+    Hazel.CImGui.ColorEdit4("Square color", sl.color)
+    sl.scene.render_objects[1]["u_color"] = Vec4f0(sl.color...)
     nothing
 end
 
