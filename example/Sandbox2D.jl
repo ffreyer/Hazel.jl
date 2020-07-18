@@ -20,7 +20,8 @@ function Sandbox2DLayer(name = "Sandbox2D")
     )
 
     # Square
-    robj1 = Hazel.Renderer2D.Quad(Vec2f0(-1.0), Vec2f0(1.5), u_color=Vec4f0(0))
+    robj1 = Hazel.Renderer2D.MoveableQuad(Vec2f0(-1.0), Vec2f0(1.5))
+    Hazel.rotateto!(robj1, 0.25pi)
 
     # TODO
     # What a dirty hack lol
@@ -47,7 +48,8 @@ function Sandbox2DLayer(name = "Sandbox2D")
     texture = Hazel.Texture2D(joinpath(Hazel.assetpath, "textures", "Checkerboard.png"))
     robj2 = Hazel.Renderer2D.Quad(
         Vec3f0(0, 0, .1), Vec3f0(1, 1, 0),
-        u_texture = (0, texture), u_color = Vec4f0(1, 0.8, 0.7, 1.0)
+        u_texture = (0, texture), u_color = Vec4f0(1, 0.8, 0.7, 1.0),
+        u_tilingfactor = 10f0
     )
     scene = Hazel.Scene(camera_controller.camera, robj1, robj2)
 
@@ -87,8 +89,11 @@ Hazel.destroy(l::Sandbox2DLayer) = Hazel.destroy(l.scene)
 Hazel.string(l::Sandbox2DLayer) = l.name
 
 
-# Hazel.enable_profiling()
+Hazel.enable_profiling()
 
 app = Hazel.BasicApplication()
 push!(app, Sandbox2DLayer())
 task = run(app)
+
+# This allows running `julia Sandbox2D.jl` without it exiting immediately
+wait(task)

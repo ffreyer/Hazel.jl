@@ -1,3 +1,10 @@
+abstract type AbstractRenderObject end
+
+# every AbstractRenderObject must implement either
+# Base.convert(::Type{RenderObject}, wrapped::AbstractRenderObject)
+# which returns a standard ::RenderObject
+# or the methods of RenderObject
+
 """
     RenderObject(shader, vertex_array)
 
@@ -7,7 +14,7 @@ Calls `unbind(vertex_array)` to avoid accidental overwriting. You may bind it
 again by calling `bind(robj.vertexarray)` or together with the shader by calling
 `bind(robj)`.
 """
-struct RenderObject{S <: AbstractShader, VA <: AbstractVertexArray}
+struct RenderObject{S <: AbstractShader, VA <: AbstractVertexArray} <: AbstractRenderObject
     shader::S
     vertex_array::VA
     uniforms::Dict{String, Any}
@@ -32,6 +39,14 @@ function RenderObject(shader, vertex_array; kwargs...)
         Dict{String, Any}(Pair(string(k), v) for (k, v) in kwargs)
     )
 end
+
+# convert interface
+bind(wrapped::AbstractRenderObject) = bind(convert(RenderObject, wrapped))
+unbind(wrapped::AbstractRenderObject) = unbind(convert(RenderObject, wrapped))
+destroy(wrapped::AbstractRenderObject) = destroy(convert(RenderObject, wrapped))
+render(wrapped::AbstractRenderObject) = render(convert(RenderObject, wrapped))
+Base.getindex(wrapped::AbstractRenderObject, key) = getindex(convert(RenderObject, wrapped), key)
+Base.setindex!(wrapped::AbstractRenderObject, value, key) = setindex!(convert(RenderObject, wrapped), value, key)
 
 @HZ_profile function bind(r::RenderObject)
     bind(r.shader)
@@ -73,7 +88,7 @@ end
     Scene(camera[, render_objects])
 """
 @HZ_profile Scene(camera::AbstractCamera) = Scene(camera, RenderObject[])
-@HZ_profile Scene(camera::AbstractCamera, robjs::RenderObject...) = Scene(camera, RenderObject[robjs...])
+@HZ_profile Scene(camera::AbstractCamera, robjs::AbstractRenderObject...) = Scene(camera, RenderObject[robjs...])
 Base.push!(scene::Scene, robj::RenderObject) = push!(scene.render_objects, robj)
 destroy(scene::Scene) = destroy.(scene.render_objects)
 

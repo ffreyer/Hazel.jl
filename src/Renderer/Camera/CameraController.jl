@@ -89,13 +89,13 @@ end
 
 Moves the camera by a given offset
 """
-@HZ_profile function moveby!(c::OrthographicCameraController{T}, offset::Point3) where {T}
+@HZ_profile function moveby!(c::OrthographicCameraController{T}, offset::Point3) where {T<:Real}
     moveby!(c, Vec{3, T}(offset))
 end
-@HZ_profile function moveby!(c::OrthographicCameraController{T}, offset::Vec3) where {T}
+@HZ_profile function moveby!(c::OrthographicCameraController{T}, offset::Vec3) where {T<:Real}
     moveby!(c, Vec{3, T}(offset))
 end
-@HZ_profile function moveby!(c::OrthographicCameraController{T}, offset::Vec3{T}) where {T}
+@HZ_profile function moveby!(c::OrthographicCameraController{T}, offset::Vec3{T}) where {T<:Real}
     c.position += offset
     recalculate_view!(c.camera, c.position, c.rotation)
     c.position
@@ -114,10 +114,7 @@ position(c::OrthographicCameraController) = c.position
 
 Rotates the camera to the given angle.
 """
-@HZ_profile function rotateto!(c::OrthographicCameraController{T}, angle) where {T}
-    rotateto!(c, T(angle))
-end
-@HZ_profile function rotateto!(c::OrthographicCameraController{T}, angle::T) where {T}
+@HZ_profile function rotateto!(c::OrthographicCameraController{T}, angle::T) where {T<:Real}
     c.rotation = angle
     recalculate_view!(c.camera, c.position, c.rotation)
     angle
@@ -127,10 +124,7 @@ end
 
 Rotates the camera by a given angle.
 """
-@HZ_profile function rotateby!(c::OrthographicCameraController{T}, angle) where {T}
-    rotateby!(c, T(angle))
-end
-@HZ_profile function rotateby!(c::OrthographicCameraController{T}, angle::T) where {T}
+@HZ_profile function rotateby!(c::OrthographicCameraController{T}, angle::T) where {T<:Real}
     c.rotation += angle
     recalculate_view!(c.camera, c.position, c.rotation)
     c.rotation

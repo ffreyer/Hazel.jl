@@ -21,8 +21,9 @@ void main(){
 layout(location = 0) out vec4 color; // a = attributed
 uniform sampler2D u_texture;
 uniform vec4 u_color;
+uniform float u_tilingfactor;
 in vec2 v_uv;
 
 void main(){
-    color = texture(u_texture, v_uv * 10.0) * u_color;
+    color = texture(u_texture, v_uv * u_tilingfactor) * u_color;
 }
