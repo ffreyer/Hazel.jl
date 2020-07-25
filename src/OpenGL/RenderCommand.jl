@@ -22,13 +22,12 @@ clear(r::OpenGLRenderCommand, color::Colorant) = clear(r, RGBA(color))
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 end
 
-@HZ_profile function draw_indexed(::OpenGLRenderCommand, va::VertexArray)
-    glDrawElements(
-        GL_TRIANGLES,
-        length(index_buffer(va)),
-        GL_UNSIGNED_INT,
-        C_NULL
+@HZ_profile function draw_indexed(
+        ::OpenGLRenderCommand,
+        va::VertexArray,
+        length = length(index_buffer(va))
     )
+    glDrawElements(GL_TRIANGLES, length, GL_UNSIGNED_INT, C_NULL)
 end
 
 viewport(::OpenGLRenderCommand, x, y, w, h) = glViewport(x, y, w, h)

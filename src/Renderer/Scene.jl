@@ -82,13 +82,13 @@ struct Scene{
         CT <: AbstractCamera
     } <: AbstractScene
     camera::CT
-    render_objects::Vector{RenderObject}
+    render_objects::Vector{AbstractRenderObject}
 end
 """
     Scene(camera[, render_objects])
 """
-@HZ_profile Scene(camera::AbstractCamera) = Scene(camera, RenderObject[])
-@HZ_profile Scene(camera::AbstractCamera, robjs::AbstractRenderObject...) = Scene(camera, RenderObject[robjs...])
+@HZ_profile Scene(camera::AbstractCamera) = Scene(camera, AbstractRenderObject[])
+@HZ_profile Scene(camera::AbstractCamera, robjs::AbstractRenderObject...) = Scene(camera, AbstractRenderObject[robjs...])
 Base.push!(scene::Scene, robj::RenderObject) = push!(scene.render_objects, robj)
 destroy(scene::Scene) = destroy.(scene.render_objects)
 

@@ -135,7 +135,9 @@ end
 Returns the current rotation of the camera
 """
 rotation(c::OrthographicCameraController) = c.rotation
-
+# TODO generic?
+rotateto!(c::OrthographicCameraController{T}, θ) where {T} = rotateto!(c, T(θ))
+rotateby!(c::OrthographicCameraController{T}, θ) where {T} = rotateby!(c, T(θ))
 
 """
     zoom!(camera_controller, zoom)

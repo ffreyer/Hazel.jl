@@ -19,18 +19,23 @@ function Sandbox2DLayer(name = "Sandbox2D")
         1280/720, rotation = true
     )
 
-    # Square
-    robj1 = Hazel.Renderer2D.MoveableQuad(Vec2f0(-1.0), Vec2f0(1.5))
-    Hazel.rotateto!(robj1, 0.25pi)
-
-    # Square
-    texture = Hazel.Texture2D(joinpath(Hazel.assetpath, "textures", "Checkerboard.png"))
-    robj2 = Hazel.Renderer2D.Quad(
-        Vec3f0(0, 0, .1), Vec3f0(1, 1, 0),
-        u_texture = (0, texture), u_color = Vec4f0(1, 0.8, 0.7, 1.0),
-        u_tilingfactor = 10f0
-    )
-    scene = Hazel.Scene(camera_controller.camera, robj1, robj2)
+    # # Square
+    # robj1 = Hazel.Renderer2D.MoveableQuad(Vec2f0(-1.0), Vec2f0(1.5))
+    # Hazel.rotateto!(robj1, 0.25pi)
+    #
+    # # Square
+    # texture = Hazel.Texture2D(joinpath(Hazel.assetpath, "textures", "Checkerboard.png"))
+    # robj2 = Hazel.Renderer2D.Quad(
+    #     Vec3f0(0, 0, .1), Vec3f0(1, 1, 0),
+    #     u_texture = (0, texture), u_color = Vec4f0(1, 0.8, 0.7, 1.0),
+    #     u_tilingfactor = 10f0
+    # )
+    quads = Hazel.Renderer2D.Quads()
+    quad1 = Hazel.Renderer2D.Quad(Vec3f0(-1, 0, 0), Vec2f0(1.5), Vec4f0(0.7, 0.8, 1, 1))
+    quad2 = Hazel.Renderer2D.Quad(Vec3f0(+1, 0, 0), Vec2f0(1.0), Vec4f0(1, 0.8, 0.7, 1))
+    quad3 = Hazel.Renderer2D.Quad(Vec3f0(0, 1, 1), Vec2f0(1.7), Vec4f0(0.3, 0.8, 0.4, 1))
+    push!(quads, quad1..., quad2..., quad3...)
+    scene = Hazel.Scene(camera_controller.camera, quads)
 
     Sandbox2DLayer(
         Ref{Hazel.BasicApplication}(),
@@ -62,7 +67,8 @@ end
 
 Hazel.@HZ_profile function Hazel.update!(gui_layer::Hazel.ImGuiLayer, sl::Sandbox2DLayer, dt)
     Hazel.CImGui.ColorEdit4("Square color", sl.color)
-    sl.scene.render_objects[1]["u_color"] = Vec4f0(sl.color...)
+    # qvs = sl.scene.render_objects[1].vertices
+    # qvs[3] = Hazel.Renderer2D.QuadVertex(qvs[3].position, Vec4f0(sl.color...), qvs[3].uv)
     nothing
 end
 
@@ -75,7 +81,7 @@ Hazel.destroy(l::Sandbox2DLayer) = Hazel.destroy(l.scene)
 Hazel.string(l::Sandbox2DLayer) = l.name
 
 
-Hazel.enable_profiling()
+# Hazel.enable_profiling()
 
 app = Hazel.BasicApplication()
 push!(app, Sandbox2DLayer())
