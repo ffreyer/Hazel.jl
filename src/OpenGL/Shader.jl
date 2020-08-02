@@ -175,6 +175,9 @@ for (type, typename) in (Float32 => :f, Int32 => :i, UInt32 => :ui)
     @eval @HZ_profile function _upload!(shader::Shader, location, v::$type)
         $(Symbol(:glUniform1, typename))(location, v)
     end
+    @eval @HZ_profile function _upload!(shader::Shader, location, v::Vector{$type})
+        $(Symbol(:glUniform1, typename, :v))(location, UInt32(length(v)), v)
+    end
 end
 
 for N in 2:4
@@ -206,6 +209,10 @@ end
     glActiveTexture(activeTarget)
     bind(t[2])
     _upload!(shader, location, activeTarget)
+end
+@HZ_profile function _upload!(shader::Shader, location, t::Vector{<:AbstractTexture})
+    targets = UInt32.(eachindex(t) .- 1)
+    _upload!(shader, location, targets)
 end
 
 

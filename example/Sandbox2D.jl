@@ -24,17 +24,25 @@ function Sandbox2DLayer(name = "Sandbox2D")
     # Hazel.rotateto!(robj1, 0.25pi)
     #
     # # Square
-    # texture = Hazel.Texture2D(joinpath(Hazel.assetpath, "textures", "Checkerboard.png"))
+    texture = Hazel.Texture2D(joinpath(Hazel.assetpath, "textures", "Checkerboard.png"))
     # robj2 = Hazel.Renderer2D.Quad(
     #     Vec3f0(0, 0, .1), Vec3f0(1, 1, 0),
     #     u_texture = (0, texture), u_color = Vec4f0(1, 0.8, 0.7, 1.0),
     #     u_tilingfactor = 10f0
     # )
     quads = Hazel.Renderer2D.Quads()
-    quad1 = Hazel.Renderer2D.Quad(Vec3f0(-1, 0, 0), Vec2f0(1.5), Vec4f0(0.7, 0.8, 1, 1))
-    quad2 = Hazel.Renderer2D.Quad(Vec3f0(+1, 0, 0), Vec2f0(1.0), Vec4f0(1, 0.8, 0.7, 1))
-    quad3 = Hazel.Renderer2D.Quad(Vec3f0(0, 1, 1), Vec2f0(1.7), Vec4f0(0.3, 0.8, 0.4, 1))
-    push!(quads, quad1..., quad2..., quad3...)
+    quad1 = Hazel.Renderer2D.Quad(
+        Vec3f0(-1, -0.5, 0), Vec2f0(1.5), color = Vec4f0(0.7, 0.8, 1, 1)
+    )
+    quad2 = Hazel.Renderer2D.Quad(
+        Vec3f0(+1, -0.5, 0), Vec2f0(1.0), color = Vec4f0(1, 0.8, 0.7, 1),
+        texture = texture, tilingfactor = 10f0
+    )
+    quad3 = Hazel.Renderer2D.Quad(
+        Vec3f0(0, 0.5, 1), Vec2f0(1.7),  color = Vec4f0(0.3, 0.8, 0.4, 1),
+        texture = texture
+    )
+    push!(quads, quad1, quad2, quad3)
     scene = Hazel.Scene(camera_controller.camera, quads)
 
     Sandbox2DLayer(
@@ -84,8 +92,9 @@ Hazel.string(l::Sandbox2DLayer) = l.name
 # Hazel.enable_profiling()
 
 app = Hazel.BasicApplication()
-push!(app, Sandbox2DLayer())
+sl = Sandbox2DLayer()
+push!(app, sl)
 task = run(app)
 
 # This allows running `julia Sandbox2D.jl` without it exiting immediately
-wait(task)
+# wait(task)

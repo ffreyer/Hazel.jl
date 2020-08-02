@@ -49,21 +49,32 @@ end
 const MAX_QUADS = 10_000
 const MAX_QUAD_VERTICES = 4MAX_QUADS
 const MAX_QUAD_INDICES = 6MAX_QUADS
+const MAX_TEXTURE_SLOTS = 32
 
 struct QuadVertex
     position::Vec3f0
     color::Vec4f0
     uv::Vec2f0
+    texture_index::Float32
+    tilingfactor::Float32
 end
 
-function Quad(position::Vec3f0, size::Vec2f0, color::Vec4f0)
-    p = position; c = color; s = size
-    return (
-        QuadVertex(p,                        c, Vec2f0(0, 0)),
-        QuadVertex(p .+ Vec3f0(s[1],0,0),    c, Vec2f0(1, 0)),
-        QuadVertex(p .+ Vec3f0(s[1],s[2],0), c, Vec2f0(1, 1)),
-        QuadVertex(p .+ Vec3f0(0,s[2],0),    c, Vec2f0(0, 1))
+struct Quad{T <: Union{Nothing, Hazel.AbstractTexture}}
+    vertices::NTuple{4, QuadVertex}
+    texture::T
+end
+
+function Quad(
+        position::Vec3f0, size::Vec2f0;
+        color::Vec4f0 = Vec4f0(1), texture = nothing, tilingfactor::Float32=1f0
     )
+    p = position; c = color; s = size; tf = tilingfactor
+    return Quad((
+        QuadVertex(p,                        c, Vec2f0(0, 0), 0f0, tf),
+        QuadVertex(p .+ Vec3f0(s[1],0,0),    c, Vec2f0(1, 0), 0f0, tf),
+        QuadVertex(p .+ Vec3f0(s[1],s[2],0), c, Vec2f0(1, 1), 0f0, tf),
+        QuadVertex(p .+ Vec3f0(0,s[2],0),    c, Vec2f0(0, 1), 0f0, tf)
+    ), texture)
 end
 
 struct Quads{S, VA, T} <: Hazel.AbstractRenderObject
@@ -73,13 +84,14 @@ struct Quads{S, VA, T} <: Hazel.AbstractRenderObject
 
     vertices::Vector{QuadVertex}
     blank_texture::T                # Texture2D
+    textures::Vector{Hazel.AbstractTexture}
 end
 
 function Quads()
-    shader = Hazel.Shader(joinpath(Hazel.assetpath, "shaders", "texture.glsl"))
 
     layout = Hazel.BufferLayout(
-        position = Vec3f0, color = Vec4f0, uv = Vec2f0
+        position = Vec3f0, color = Vec4f0, uv = Vec2f0,
+        texture_index = Float32, tilingfactor = Float32
     )
     vertex_buffer = Hazel.VertexBuffer(MAX_QUAD_VERTICES, layout)
     indices = UInt32[4o+i for o in 0:MAX_QUADS-1 for i in [0, 1, 2, 2, 3, 0]]
@@ -90,9 +102,46 @@ function Quads()
 
     blank_texture = Hazel.Texture2D(fill(RGBA(1, 1, 1, 1), 1, 1))
 
-    Quads(shader, vertex_array, Dict{String,Any}(), QuadVertex[], blank_texture)
+    shader = Hazel.Shader(joinpath(Hazel.assetpath, "shaders", "texture.glsl"))
+    Hazel.bind(shader)
+    Hazel.upload!(shader, "u_texture", Int32.(collect(0:MAX_TEXTURE_SLOTS-1)))
+
+    Quads(
+        shader, vertex_array, Dict{String,Any}(),
+        QuadVertex[], blank_texture, Hazel.AbstractTexture[blank_texture]
+    )
 end
 
+function Base.push!(quads::Quads, q::Quad)
+    if q.texture == nothing
+        texture_index = 1
+    else
+        texture_index = findfirst(x -> x == q.texture, quads.textures)
+        if texture_index == nothing
+            if length(quads.textures) <= MAX_TEXTURE_SLOTS
+                push!(quads.textures, q.texture)
+                texture_index = length(quads.textures)
+            else
+                throw(BoundsError(quads.textures, MAX_TEXTURE_SLOTS+1))
+            end
+        end
+    end
+
+    if texture_index == 1
+        push!(quads.vertices, q.vertices...)
+    else
+        for qv in q.vertices
+            push!(
+                quads.vertices,
+                QuadVertex(
+                    qv.position, qv.color, qv.uv,
+                    Float32(texture_index-1), qv.tilingfactor
+                )
+            )
+        end
+    end
+    quads
+end
 function Base.push!(quads::Quads, qvs::NTuple{4, QuadVertex})
     push!(quads.vertices, qvs...)
 end
@@ -112,6 +161,10 @@ end
     for (k, v) in q.uniforms
         Hazel.upload!(q.shader, k, v)
     end
+    for (slot, texture) in enumerate(q.textures)
+        Hazel.bind(texture, slot)
+    end
+
     Hazel.draw_indexed(
         Hazel.RenderCommand,
         q.vertex_array,

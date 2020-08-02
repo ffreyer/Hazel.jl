@@ -41,7 +41,20 @@ end
 end
 width(t::Texture2D) = t.size[1]
 height(t::Texture2D) = t.size[2]
-@HZ_profile bind(t::Texture2D) = glBindTexture(GL_TEXTURE_2D, t.id) #glBindTextureUnit
+# TODO glActiveTexture(GL_TEXTURE1) # TODO make list
+"""
+    bind(texture[, slot=1])
+
+Bind the texture to a given slot. The slot index is 1-based and must be
+between 1 and 32
+"""
+@HZ_profile bind(t::Texture2D) = glBindTexture(GL_TEXTURE_2D, t.id)
+@HZ_profile function bind(t::Texture2D, slot)
+    glActiveTexture(UInt32(GL_TEXTURE0 - 1 + slot))
+    # @info Int(33983 + slot-GL_TEXTURE0), t.path
+    glBindTexture(GL_TEXTURE_2D, t.id)
+    glActiveTexture(GL_TEXTURE0)
+end
 @HZ_profile unbind(t::Texture2D) = glBindTexture(GL_TEXTURE_2D, 0) #glBindTextureUnit
 destroy(t::Texture2D) = glDeleteTextures(id)
 
@@ -58,3 +71,5 @@ img2bytes(img::Matrix{RGB}) = [UInt8(x.i) for c in img for x in (c.r, c.g, c.b)]
         img2bytes(img)
     )
 end
+
+Base.:(==)(t1::Texture2D, t2::Texture2D) = t1.id == t2.id
