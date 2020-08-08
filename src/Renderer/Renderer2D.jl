@@ -59,36 +59,97 @@ struct QuadVertex
     tilingfactor::Float32
 end
 
-struct Quad{T <: Union{Nothing, Hazel.AbstractTexture}}
-    vertices::NTuple{4, QuadVertex}
-    texture::T
+function QuadVertex(q::QuadVertex; 
+        position = q.position, 
+        color = q.color, 
+        uv = q.uv, 
+        texture_index = q.texture_index,
+        tilingfactor = q.tilingfactor
+    )
+    QuadVertex(position, color, uv, texture_index, tilingfactor)
 end
 
+
+# TODO
+# Make Renderer2D a struct again
+# Make it generate the white texture
+# Then auto-replace "nothing" to white texture to make this type stable
+mutable struct Quad{T <: Union{Nothing, Hazel.AbstractTexture}}
+    vertices::NTuple{4, QuadVertex}
+    position::Vec3f0
+    rotation::Float32
+    scale::Vec3f0
+    texture::T
+end
+# struct StaticQuad{T <: Union{Nothing, Hazel.AbstractTexture}}
+#     vertices::NTuple{4, QuadVertex}
+#     texture::T
+# end
+
+
 function Quad(
-        position::Vec3f0, size::Vec2f0;
+        position::Vec3f0, size::Vec2f0; rotation = 0f0,
         color::Vec4f0 = Vec4f0(1), texture = nothing, tilingfactor::Float32=1f0
     )
-    p = position; c = color; s = size; tf = tilingfactor
+    scale = Vec3f0(size..., 1f0); c = color; tf = tilingfactor
+    T = Hazel.translationmatrix(position) *
+        Hazel.rotationmatrix_z(rotation) * 
+        Hazel.scalematrix(scale)
     return Quad((
-        QuadVertex(p,                        c, Vec2f0(0, 0), 0f0, tf),
-        QuadVertex(p .+ Vec3f0(s[1],0,0),    c, Vec2f0(1, 0), 0f0, tf),
-        QuadVertex(p .+ Vec3f0(s[1],s[2],0), c, Vec2f0(1, 1), 0f0, tf),
-        QuadVertex(p .+ Vec3f0(0,s[2],0),    c, Vec2f0(0, 1), 0f0, tf)
-    ), texture)
+        QuadVertex(T * Vec4f0(-0.5, -0.5, 0, 1), c, Vec2f0(0, 0), 0f0, tf),
+        QuadVertex(T * Vec4f0( 0.5, -0.5, 0, 1), c, Vec2f0(1, 0), 0f0, tf),
+        QuadVertex(T * Vec4f0( 0.5,  0.5, 0, 1), c, Vec2f0(1, 1), 0f0, tf),
+        QuadVertex(T * Vec4f0(-0.5,  0.5, 0, 1), c, Vec2f0(0, 1), 0f0, tf)
+    ), position, Float32(rotation), scale, texture)
 end
+
+function recalculate!(q::Quad)
+    T = Hazel.translationmatrix(q.position) *
+        Hazel.rotationmatrix_z(q.rotation) * 
+        Hazel.scalematrix(q.scale)
+    
+    q.vertices = (
+        QuadVertex(q.vertices[1], position = T * Vec4f0(-0.5, -0.5, 0, 1)),
+        QuadVertex(q.vertices[2], position = T * Vec4f0( 0.5, -0.5, 0, 1)),
+        QuadVertex(q.vertices[3], position = T * Vec4f0( 0.5,  0.5, 0, 1)),
+        QuadVertex(q.vertices[4], position = T * Vec4f0(-0.5,  0.5, 0, 1))
+    )
+    nothing
+end
+Hazel.moveto!(q::Quad, p::Vec3f0) = (q.position = p; recalculate!(q))
+Hazel.moveto!(q::Quad, p::Vec2f0) = moveto!(q, Vec3f0(p..., q.position[3]))
+Hazel.moveby!(q::Quad, v::Vec3f0) = moveto!(q, q.position + v)
+Hazel.moveby!(q::Quad, v::Vec2f0) = moveto!(q, q.position + Vec3f0(v..., 0))
+
+Hazel.rotateto!(q::Quad, θ::Float32) = (q.rotation = θ; recalculate!(q))
+Hazel.rotateby!(q::Quad, θ::Float32) = rotateto!(q, q.rotation + θ)
+
+scaleto!(q::Quad, s::Vec2f0) = scaleto!(q, Vec3f0(s..., 1.0))
+scaleto!(q::Quad, s::Float32) = scaleto!(q, Vec3f0(s, s, 1.0))
+scaleto!(q::Quad, s::Vec3f0) = (q.scale = s; recalculate!(q))
+scaleby!(q::Quad, s::Vec3f0) = scaleto!(q, s .* q.scale)
+scaleby!(q::Quad, s::Vec2f0) = scaleby!(q, Vec3f0(s..., 1.0))
+scaleby!(q::Quad, s::Float32) = scaleto!(q, s * q.scale)
+# TODO move these general methods into Hazel
+# Hazel.rotateto!(q, θ::Real) = rotateto!(q, Float32(θ))
+# Hazel.rotateby!(q, θ::Real) = rotateby!(q, Float32(θ))
+scaleto!(q, s::Real) = scaleto!(q, Float32(s))
+scaleby!(q, s::Real) = scaleby!(q, Float32(s))
+# TODO move this definition to Hazel somewhere
+export scaleto!, scaleby!
+
 
 struct Quads{S, VA, T} <: Hazel.AbstractRenderObject
     shader::S                       # Shader
     vertex_array::VA                # VertexArray
     uniforms::Dict{String, Any}
 
-    vertices::Vector{QuadVertex}
+    quads::Vector{Quad}
     blank_texture::T                # Texture2D
     textures::Vector{Hazel.AbstractTexture}
 end
 
 function Quads()
-
     layout = Hazel.BufferLayout(
         position = Vec3f0, color = Vec4f0, uv = Vec2f0,
         texture_index = Float32, tilingfactor = Float32
@@ -108,16 +169,16 @@ function Quads()
 
     Quads(
         shader, vertex_array, Dict{String,Any}(),
-        QuadVertex[], blank_texture, Hazel.AbstractTexture[blank_texture]
+        Quad[], blank_texture, Hazel.AbstractTexture[blank_texture]
     )
 end
 
 function Base.push!(quads::Quads, q::Quad)
-    if q.texture == nothing
+    if q.texture === nothing
         texture_index = 1
     else
         texture_index = findfirst(x -> x == q.texture, quads.textures)
-        if texture_index == nothing
+        if texture_index === nothing
             if length(quads.textures) <= MAX_TEXTURE_SLOTS
                 push!(quads.textures, q.texture)
                 texture_index = length(quads.textures)
@@ -127,26 +188,16 @@ function Base.push!(quads::Quads, q::Quad)
         end
     end
 
-    if texture_index == 1
-        push!(quads.vertices, q.vertices...)
-    else
-        for qv in q.vertices
-            push!(
-                quads.vertices,
-                QuadVertex(
-                    qv.position, qv.color, qv.uv,
-                    Float32(texture_index-1), qv.tilingfactor
-                )
-            )
-        end
+    if texture_index != 1
+        q.vertices = (
+            QuadVertex(q.vertices[1], texture_index = Float32(texture_index-1)),
+            QuadVertex(q.vertices[2], texture_index = Float32(texture_index-1)),
+            QuadVertex(q.vertices[3], texture_index = Float32(texture_index-1)),
+            QuadVertex(q.vertices[4], texture_index = Float32(texture_index-1))
+        )
     end
+    push!(quads.quads, q)
     quads
-end
-function Base.push!(quads::Quads, qvs::NTuple{4, QuadVertex})
-    push!(quads.vertices, qvs...)
-end
-function Base.push!(quads::Quads, qv::QuadVertex)
-    push!(quads.vertices, qv)
 end
 
 
@@ -157,7 +208,8 @@ end
 # Base.deleteat!
 
 @HZ_profile function Hazel.render(q::Quads)
-    Hazel.upload!(Hazel.vertex_buffer(q.vertex_array), q.vertices)
+    # Hazel.upload!(Hazel.vertex_buffer(q.vertex_array), q.vertices)
+    Hazel.upload!(Hazel.vertex_buffer(q.vertex_array), [quad.vertices for quad in q.quads])
     for (k, v) in q.uniforms
         Hazel.upload!(q.shader, k, v)
     end
@@ -168,7 +220,7 @@ end
     Hazel.draw_indexed(
         Hazel.RenderCommand,
         q.vertex_array,
-        trunc(Int64, 1.5length(q.vertices))
+        trunc(Int64, 6length(q.quads))
     )
 end
 

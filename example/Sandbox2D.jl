@@ -32,17 +32,21 @@ function Sandbox2DLayer(name = "Sandbox2D")
     # )
     quads = Hazel.Renderer2D.Quads()
     quad1 = Hazel.Renderer2D.Quad(
-        Vec3f0(-1, -0.5, 0), Vec2f0(1.5), color = Vec4f0(0.7, 0.8, 1, 1)
+        Vec3f0(-1, -0.5, 0), Vec2f0(0.5), color = Vec4f0(0.7, 0.8, 1, 1)
     )
     quad2 = Hazel.Renderer2D.Quad(
         Vec3f0(+1, -0.5, 0), Vec2f0(1.0), color = Vec4f0(1, 0.8, 0.7, 1),
         texture = texture, tilingfactor = 10f0
     )
     quad3 = Hazel.Renderer2D.Quad(
-        Vec3f0(0, 0.5, 1), Vec2f0(1.7),  color = Vec4f0(0.3, 0.8, 0.4, 1),
+        Vec3f0(0, 0.5, 1), Vec2f0(0.7),  color = Vec4f0(0.3, 0.8, 0.4, 1),
         texture = texture
     )
-    push!(quads, quad1, quad2, quad3)
+    quad4 = Hazel.Renderer2D.Quad(
+        Vec3f0(0, -0.5, 1), Vec2f0(0.7),  color = Vec4f0(0.1, 0.3, 0.7, 1),
+        texture = texture, rotation=45
+    )
+    push!(quads, quad1, quad2, quad3, quad4)
     scene = Hazel.Scene(camera_controller.camera, quads)
 
     Sandbox2DLayer(
@@ -68,6 +72,7 @@ Hazel.@HZ_profile function Hazel.update!(l::Sandbox2DLayer, dt)
 
     Hazel.@HZ_profile "Render Layer" begin
         Hazel.clear(Hazel.RenderCommand)
+        Hazel.rotateby!(l.scene.render_objects[1].quads[2], Float32(5dt))
         Hazel.Renderer2D.submit(l.scene)
     end
     nothing
