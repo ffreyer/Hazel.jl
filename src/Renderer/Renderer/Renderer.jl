@@ -22,15 +22,18 @@ module Renderer
 
 using ..Hazel
 
-
 """
     Renderer.init!([; kwargs...])
 
 Intializes/Configures the renderer.
 """
-init!(kwargs...) = Hazel.init!(Hazel.RenderCommand, kwargs...)
+function init!(; kwargs...)
+    Hazel.RenderCommand.init!()
+    nothing
+end
 
-resize!(width, height) = Hazel.viewport(Hazel.RenderCommand, 0, 0, width, height)
+
+resize!(width, height) = Hazel.RenderCommand.viewport(0, 0, width, height)
 
 """
     Renderer.submit(scene[; uniforms])
@@ -54,7 +57,7 @@ function submit(robj::Hazel.RenderObject; kwargs...)
     for (name, value) in kwargs
         Hazel.upload!(robj.shader, name, value)
     end
-    Hazel.draw_indexed(Hazel.RenderCommand, robj.vertex_array)
+    Hazel.RenderCommand.draw_indexed(robj.vertex_array)
 end
 
 

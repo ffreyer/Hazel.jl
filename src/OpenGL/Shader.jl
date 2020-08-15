@@ -158,6 +158,13 @@ destroy(shader::Shader) = glDeleteProgram(shader.id[])
 name(shader::Shader) = shader.name
 
 
+"""
+    upload!(shader, name = object)
+    upload!(shader, name, object)
+
+Uploads an `object` to a uniform `name` in the given `shader`. The shader must
+be bound for this.
+"""
 function upload!(shader::Shader; kwargs...)
     for (k, v) in kwargs
         upload!(shader, k, v)

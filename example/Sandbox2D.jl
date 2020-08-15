@@ -19,18 +19,7 @@ function Sandbox2DLayer(name = "Sandbox2D")
         1280/720, rotation = true
     )
 
-    # # Square
-    # robj1 = Hazel.Renderer2D.MoveableQuad(Vec2f0(-1.0), Vec2f0(1.5))
-    # Hazel.rotateto!(robj1, 0.25pi)
-    #
-    # # Square
     texture = Hazel.Texture2D(joinpath(Hazel.assetpath, "textures", "Checkerboard.png"))
-    # robj2 = Hazel.Renderer2D.Quad(
-    #     Vec3f0(0, 0, .1), Vec3f0(1, 1, 0),
-    #     u_texture = (0, texture), u_color = Vec4f0(1, 0.8, 0.7, 1.0),
-    #     u_tilingfactor = 10f0
-    # )
-    quads = Hazel.Renderer2D.Quads()
     quad1 = Hazel.Renderer2D.Quad(
         Vec3f0(-1, -0.5, 0), Vec2f0(0.5), color = Vec4f0(0.7, 0.8, 1, 1)
     )
@@ -43,11 +32,25 @@ function Sandbox2DLayer(name = "Sandbox2D")
         texture = texture
     )
     quad4 = Hazel.Renderer2D.Quad(
-        Vec3f0(0, -0.5, 1), Vec2f0(0.7),  color = Vec4f0(0.1, 0.3, 0.7, 1),
+        Vec3f0(0, -0.5, 2rand()), Vec2f0(0.7),  color = Vec4f0(0.1, 0.3, 0.7, 1),
         texture = texture, rotation=45
     )
-    push!(quads, quad1, quad2, quad3, quad4)
-    scene = Hazel.Scene(camera_controller.camera, quads)
+
+    scene = Hazel.Scene(camera_controller.camera)
+    push!(scene, quad1, quad2, quad3, quad4)
+
+    # "Stress" test - goal: 100k+ @60
+    for y in -5f0:0.1f0:5f0, x in -5f0:0.1f0:5f0
+        quad = Hazel.Renderer2D.Quad(
+            Vec3f0(x, y, 1), Vec2f0(0.45), 
+            color = Vec4f0((x+5f0)/10f0, 0.4f0, (y+5f0)/10f0, 0.7f0)
+        )
+        push!(scene, quad)
+    end
+
+    robjs = Hazel.render_objects(scene)
+    @info length(robjs)
+    @info map(quads -> length(quads.quads), robjs)
 
     Sandbox2DLayer(
         Ref{Hazel.BasicApplication}(),
@@ -71,7 +74,7 @@ Hazel.@HZ_profile function Hazel.update!(l::Sandbox2DLayer, dt)
     Hazel.@HZ_profile "Update camera" update!(l.camera_controller, app, dt)
 
     Hazel.@HZ_profile "Render Layer" begin
-        Hazel.clear(Hazel.RenderCommand)
+        Hazel.RenderCommand.clear()
         Hazel.rotateby!(l.scene.render_objects[1].quads[2], Float32(5dt))
         Hazel.Renderer2D.submit(l.scene)
     end
@@ -95,11 +98,16 @@ Hazel.string(l::Sandbox2DLayer) = l.name
 
 
 # Hazel.enable_profiling()
-
-app = Hazel.BasicApplication()
-sl = Sandbox2DLayer()
-push!(app, sl)
-task = run(app)
+begin
+    app = Hazel.BasicApplication()
+    try
+        sl = Sandbox2DLayer()
+        push!(app, sl)
+    finally
+        task = run(app)
+    end
+    nothing
+end
 
 # This allows running `julia Sandbox2D.jl` without it exiting immediately
 # wait(task)

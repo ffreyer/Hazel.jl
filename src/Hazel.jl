@@ -20,10 +20,6 @@ export print_timer, reset_timer!
 # projection stuff
 include("math/math.jl")
 
-# TODO get rid of this?
-# @backend macro
-include("backend_error.jl")
-
 # currently just benchmarking/TimerOutputs extras
 include("debug/Instrumentation.jl")
 export @HZ_profile
@@ -56,6 +52,24 @@ export MutableLayerStack, StaticLayerStack
 export push_overlay!, pop_overlay!
 
 
+using GLFW, ModernGL
+# Window Implementation (and some event handling)
+include("GLFW/GLFW.jl")
+export WindowProperties, AbstractWindow, Window
+export isopen, enable_vsync, disable_vsync, native_window
+export keypressed, mousebutton_pressed, mouse_pos, mouse_x, mouse_y
+
+
+# OpenGL Implementations of stuff
+include("OpenGL/OpenGL.jl")
+# export gltype,
+# export RenderCommand, clear, draw_indexed
+
+
+using CImGui
+include("Layers/ImGuiLayer.jl")
+
+
 # Buffers, shaders, etc
 include("Renderer/main.jl")
 export AbstractCamera, OrthographicCamera
@@ -74,26 +88,7 @@ export VertexArray, vertex_buffer, index_buffer
 export Texture2D
 
 
-# A thing to render on
-include("Window/Window.jl")
-export WindowProperties, AbstractWindow, Window
-export isopen, enable_vsync, disable_vsync, native_window
 
-
-using GLFW, ModernGL
-# Window Implementation (and some event handling)
-include("GLFW/GLFW.jl")
-export keypressed, mousebutton_pressed, mouse_pos, mouse_x, mouse_y
-
-
-# OpenGL Implementations of stuff
-include("OpenGL/OpenGL.jl")
-# export gltype,
-# export RenderCommand, clear, draw_indexed
-
-
-using CImGui
-include("Layers/ImGuiLayer.jl")
 
 
 # An Application holds everything together
@@ -119,3 +114,12 @@ end
 # - text rendering
 # - post effects (bloom, color correction)
 # - particle system
+
+# TODO
+# - make a Time struct with increasing time and delta time
+#       struct Time{T}
+#           time::T
+#           delta::T
+#       end
+#       Base.(:+)(t::Time, dt) = Time(t.time + dt, dt)
+#       etc

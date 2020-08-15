@@ -47,5 +47,17 @@ function destroy(va::VertexArray)
     destroy(va.vb)
     destroy(va.ib)
 end
+
+"""
+    vertex_buffer(vertex_array)
+
+Returns all vertex buffers connected to the given `vertex_array`.
+"""
 vertex_buffer(va::VertexArray) = va.vb
+
+"""
+    index_buffer(vertex_array)
+
+Returns the index buffer connected to the given `vertex_array`.
+"""
 index_buffer(va::VertexArray) = va.ib

@@ -1,56 +1,16 @@
-
-module Renderer2D
-
-using ..Hazel
-
-
-"""
-    Renderer.init!([; kwargs...])
-
-Intializes/Configures the renderer.
-"""
-function init!(kwargs...)
-    Hazel.init!(Hazel.RenderCommand, kwargs...)
-    nothing
-end
-
-resize!(width, height) = Hazel.viewport(Hazel.RenderCommand, 0, 0, width, height)
-
-"""
-    Renderer2D.submit(scene[; uniforms])
-
-Draws a `scene` with the given uniforms.
-"""
-@HZ_profile function submit(scene::Hazel.AbstractScene; kwargs...)
-    for robj in scene.render_objects
-        submit(robj, u_projection_view = Hazel.projection_view(scene.camera); kwargs...)
-    end
-end
-
-
-"""
-    Renderer2D.submit(render_object[; uniforms])
-
-Draws a `render_object` with the given uniforms.
-"""
-@HZ_profile function submit(robj::Hazel.AbstractRenderObject; kwargs...)
-    Hazel.bind(robj)
-    for (name, value) in kwargs
-        Hazel.upload!(robj.shader, name, value)
-    end
-    Hazel.render(robj)
-end
-
-
-################################################################################
-### Batch Rendering
-################################################################################
-
+# Limits for a single batch rendered drawcall
 const MAX_QUADS = 10_000
 const MAX_QUAD_VERTICES = 4MAX_QUADS
 const MAX_QUAD_INDICES = 6MAX_QUADS
 const MAX_TEXTURE_SLOTS = 32
 
+# TODO this doesn't seem to work :(
+# Texture for un-textured quads
+# const blank_texture = Hazel.Texture2D(fill(RGBA(1, 1, 1, 1), 1, 1))
+const blank_texture = Ref{Hazel.Texture2D}()
+
+
+# Vertex Data of Quads
 struct QuadVertex
     position::Vec3f0
     color::Vec4f0
@@ -69,27 +29,48 @@ function QuadVertex(q::QuadVertex;
     QuadVertex(position, color, uv, texture_index, tilingfactor)
 end
 
+function Base.show(io::IO, qv::QuadVertex)
+    println(io, "QuadVertex")
+    println(io, "\tposition = $(qv.position)")
+    println(io, "\tcolor = $(qv.color)")
+    println(io, "\tuv = $(qv.uv)")
+    println(io, "\ttexture_index = $(qv.texture_index)")
+    println(io, "\ttilingfactor = $(qv.tilingfactor)")
+end
 
-# TODO
-# Make Renderer2D a struct again
-# Make it generate the white texture
-# Then auto-replace "nothing" to white texture to make this type stable
-mutable struct Quad{T <: Union{Nothing, Hazel.AbstractTexture}}
+# # Full Quad Data, can be manipulated
+mutable struct Quad
     vertices::NTuple{4, QuadVertex}
     position::Vec3f0
     rotation::Float32
     scale::Vec3f0
-    texture::T
+    texture::Hazel.Texture2D
 end
-# struct StaticQuad{T <: Union{Nothing, Hazel.AbstractTexture}}
-#     vertices::NTuple{4, QuadVertex}
-#     texture::T
-# end
 
+function Base.show(io::IO, q::Quad)
+    println(io, "Quad")
+    println(io, "\tposition = $(q.position)")
+    println(io, "\trotation = $(q.rotation)")
+    println(io, "\tscale = $(q.scale)")
+    println(io, "\ttexture = $(q.texture.path)")
+    println(io, "\ttexture_index = $(q.vertices[1].texture_index)")
+end
 
+"""
+    Quad(position, size[; rotation, color, texture, tilingfactor])
+
+Creates a `Quad` at the given position with a given size.
+
+Default keyword arguments:
+- `rotation = 0f0` in Degrees
+- `color = Vec4f0(1)`
+- `texture = Renderer2D.blank_texture`
+- `tilingfactor = 1f0`
+"""
 function Quad(
         position::Vec3f0, size::Vec2f0; rotation = 0f0,
-        color::Vec4f0 = Vec4f0(1), texture = nothing, tilingfactor::Float32=1f0
+        color::Vec4f0 = Vec4f0(1), texture = blank_texture[], 
+        tilingfactor::Float32 = 1f0
     )
     scale = Vec3f0(size..., 1f0); c = color; tf = tilingfactor
     T = Hazel.translationmatrix(position) *
@@ -107,7 +88,7 @@ function recalculate!(q::Quad)
     T = Hazel.translationmatrix(q.position) *
         Hazel.rotationmatrix_z(q.rotation) * 
         Hazel.scalematrix(q.scale)
-    
+
     q.vertices = (
         QuadVertex(q.vertices[1], position = T * Vec4f0(-0.5, -0.5, 0, 1)),
         QuadVertex(q.vertices[2], position = T * Vec4f0( 0.5, -0.5, 0, 1)),
@@ -139,14 +120,13 @@ scaleby!(q, s::Real) = scaleby!(q, Float32(s))
 export scaleto!, scaleby!
 
 
-struct Quads{S, VA, T} <: Hazel.AbstractRenderObject
-    shader::S                       # Shader
-    vertex_array::VA                # VertexArray
+struct Quads <: Hazel.AbstractRenderObject
+    shader::Hazel.Shader
+    vertex_array::Hazel.VertexArray
     uniforms::Dict{String, Any}
 
     quads::Vector{Quad}
-    blank_texture::T                # Texture2D
-    textures::Vector{Hazel.AbstractTexture}
+    textures::Vector{Hazel.Texture2D}
 end
 
 function Quads()
@@ -161,20 +141,56 @@ function Quads()
     # for savety
     Hazel.unbind(vertex_array)
 
-    blank_texture = Hazel.Texture2D(fill(RGBA(1, 1, 1, 1), 1, 1))
-
     shader = Hazel.Shader(joinpath(Hazel.assetpath, "shaders", "texture.glsl"))
     Hazel.bind(shader)
     Hazel.upload!(shader, "u_texture", Int32.(collect(0:MAX_TEXTURE_SLOTS-1)))
 
     Quads(
         shader, vertex_array, Dict{String,Any}(),
-        Quad[], blank_texture, Hazel.AbstractTexture[blank_texture]
+        Quad[], Hazel.Texture2D[blank_texture[]]
     )
 end
 
-function Base.push!(quads::Quads, q::Quad)
-    if q.texture === nothing
+
+
+function Base.push!(scene::Hazel.AbstractScene, quad::Quad, quads::Quad...)
+    _push!(scene, quad, quads...)
+end
+function _push!(scene::Hazel.AbstractScene, quads::Quad...)
+    robjs = filter(robj -> robj isa Quads, Hazel.render_objects(scene))
+
+    if isempty(robjs)
+        robj = Quads()
+        push!(robjs, robj)
+        push!(scene, robj)
+    end
+
+    robj_idx = 0
+    robj = first(robjs)
+
+    for quad in quads
+        success = _push!(robj, quad)
+
+        while !success
+            robj_idx += 1
+            if robj_idx > length(robjs)
+                robj = Quads()
+                push!(robjs, robj)
+                push!(scene, robj)
+            else
+                robj = robjs[robj_idx]
+            end
+            success = _push!(robj, quad)
+        end
+    end
+    scene
+end
+function _push!(quads::Quads, q::Quad)
+    if length(quads.quads) == MAX_QUADS
+        return false
+    end
+
+    if q.texture === blank_texture[]
         texture_index = 1
     else
         texture_index = findfirst(x -> x == q.texture, quads.textures)
@@ -183,7 +199,7 @@ function Base.push!(quads::Quads, q::Quad)
                 push!(quads.textures, q.texture)
                 texture_index = length(quads.textures)
             else
-                throw(BoundsError(quads.textures, MAX_TEXTURE_SLOTS+1))
+                return false
             end
         end
     end
@@ -197,7 +213,7 @@ function Base.push!(quads::Quads, q::Quad)
         )
     end
     push!(quads.quads, q)
-    quads
+    return true
 end
 
 
@@ -208,6 +224,7 @@ end
 # Base.deleteat!
 
 @HZ_profile function Hazel.render(q::Quads)
+    # TODO: Can we reduce allocations here?
     # Hazel.upload!(Hazel.vertex_buffer(q.vertex_array), q.vertices)
     Hazel.upload!(Hazel.vertex_buffer(q.vertex_array), [quad.vertices for quad in q.quads])
     for (k, v) in q.uniforms
@@ -217,8 +234,7 @@ end
         Hazel.bind(texture, slot)
     end
 
-    Hazel.draw_indexed(
-        Hazel.RenderCommand,
+    Hazel.RenderCommand.draw_indexed(
         q.vertex_array,
         trunc(Int64, 6length(q.quads))
     )
@@ -242,6 +258,10 @@ Base.getindex(r::Quads, key::String) = getindex(r.uniforms, key)
 @HZ_profile function Base.setindex!(r::Quads, value, key::String)
     setindex!(r.uniforms, value, key)
 end
+
+
+
+
 
 
 
@@ -349,6 +369,3 @@ end
 #         uniforms
 #     )
 # end
-
-
-end

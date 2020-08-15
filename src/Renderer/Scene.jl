@@ -68,7 +68,7 @@ end
     for (k, v) in r.uniforms
         Hazel.upload!(r.shader, k, v)
     end
-    Hazel.draw_indexed(Hazel.RenderCommand, r.vertex_array)
+    Hazel.RenderCommand.draw_indexed(r.vertex_array)
 end
 
 Base.getindex(r::RenderObject, key::String) = getindex(r.uniforms, key)
@@ -89,7 +89,8 @@ end
 """
 @HZ_profile Scene(camera::AbstractCamera) = Scene(camera, AbstractRenderObject[])
 @HZ_profile Scene(camera::AbstractCamera, robjs::AbstractRenderObject...) = Scene(camera, AbstractRenderObject[robjs...])
-Base.push!(scene::Scene, robj::RenderObject) = push!(scene.render_objects, robj)
+Base.push!(scene::Scene, robj::AbstractRenderObject) = push!(scene.render_objects, robj)
+@inline render_objects(scene::Scene) = scene.render_objects
 destroy(scene::Scene) = destroy.(scene.render_objects)
 
 camera(scene::Scene) = scene.camera

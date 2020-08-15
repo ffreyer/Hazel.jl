@@ -44,6 +44,11 @@ end
 @HZ_profile bind(buffer::VertexBuffer) = glBindBuffer(GL_ARRAY_BUFFER, buffer.id[])
 @HZ_profile unbind(buffer::VertexBuffer) = glBindBuffer(GL_ARRAY_BUFFER, 0)
 destroy(buffer::VertexBuffer) = glDeleteBuffers(1, buffer.id)
+"""
+    layout(vertex_buffer)
+
+Returns the layout attached to the given `vertex_buffer`
+"""
 layout(vb::VertexBuffer) = vb.layout
 
 function upload!(vb::VertexBuffer, vertices::AbstractArray)

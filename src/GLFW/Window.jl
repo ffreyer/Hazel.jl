@@ -1,3 +1,35 @@
+# No point in this if it's not mutable
+mutable struct WindowProperties
+    title::String
+    width::UInt32
+    height::UInt32
+    isopen::Bool
+end
+
+"""
+    WindowProperties()
+
+Creates a `WindowProperties` object, which contains the window title, the
+current width, height and whether the window is currently open.
+
+#### Keyword Arguments:
+- `title = "Hazel Engine"`: The title of the window.
+- `width = 1280`: The width of the window.
+- `height = 720`: The height of the window.
+- `isopen = true`: Whether the window is open.
+"""
+function WindowProperties(;
+        title = "Hazel Engine",
+        width = 1280,
+        height = 720,
+        isopen = true
+    )
+    new(title, width, height, isopen)
+end
+
+
+abstract type AbstractWindow end
+
 struct Window <: AbstractWindow
     context::GLFWContext
     properties::WindowProperties

@@ -17,6 +17,10 @@ end
         MutableLayerStack()
     )
 
+    # TODO: Only one?
+    # Renderer.init!()
+    Renderer2D.init!()
+
     @info (glGetString(GL_VENDOR) |> unsafe_string)
     @info (glGetString(GL_RENDERER) |> unsafe_string)
     @info (glGetString(GL_VERSION) |> unsafe_string)
@@ -31,7 +35,6 @@ end
     end
 
     app.running = true
-    Renderer.init!()
     push_overlay!(app, ImGuiLayer())
 
     app
@@ -103,9 +106,6 @@ end
 @HZ_profile function handle!(app::AbstractApplication, event::AbstractEvent)
     # handle! returns true if the event has been processed
     handle!(window(app), event) && return true
-    event isa WindowMinimizedEvent && minimize!(app)
-    event isa WindowRestoredEvent && restore!(app)
-    event isa WindowResizeEvent && resize!(app, event.width, event.height)
 
     for layer in Iterators.reverse(app.layerstack)
         handle!(layer, event) && return true
@@ -114,6 +114,24 @@ end
     @debug "Event $event has not been handled!"
 
     false
+end
+
+function handle!(app::AbstractApplication, ::WindowCloseEvent)
+    @warn "Closing Window"
+    destroy(app)
+    true
+end
+function handle!(app::AbstractApplication, ::WindowRestoredEvent)
+    restore!(app)
+    true
+end
+function handle!(app::AbstractApplication, event::WindowResizeEvent)
+    resize!(app, event.width, event.height)
+    true
+end
+function handle!(app::AbstractApplication, ::WindowMinimizedEvent)
+    minimize!(app)
+    true
 end
 
 
@@ -137,22 +155,12 @@ end
 window(app::AbstractApplication) = app.window
 
 
-
-function handle!(app::AbstractApplication, event::WindowCloseEvent)
-    @warn "Closing Window"
-    destroy(app)
-    true
-end
-
 function minimize!(app::AbstractApplication)
     app.minimized = true
-    false
 end
 function restore!(app::AbstractApplication)
     app.minimized = false
-    false
 end
 @HZ_profile function resize!(app::AbstractApplication, width, height)
     Renderer.resize!(width, height)
-    false
 end

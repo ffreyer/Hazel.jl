@@ -39,6 +39,7 @@ end
 
     Texture2D{eltype(img)}(path, _size, id, internal_format, data_format)
 end
+
 width(t::Texture2D) = t.size[1]
 height(t::Texture2D) = t.size[2]
 # TODO glActiveTexture(GL_TEXTURE1) # TODO make list
