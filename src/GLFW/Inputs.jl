@@ -4,7 +4,7 @@ end
 
 function mousebutton_pressed(window::Window, button)
     glfw_window = native_window(window)
-    GLFW.GetMouseButton(glfw_window, button)
+    GLFW.GetMouseButton(glfw_window, Cint(button))
 end
 
 mouse_x(window::Window) = mouse_pos(window)[1]

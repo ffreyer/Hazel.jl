@@ -1,5 +1,7 @@
 using Revise, Hazel, LinearAlgebra, Printf
 
+include("particles.jl")
+
 
 struct Sandbox2DLayer{
         AT <: Hazel.AbstractApplication
@@ -11,6 +13,7 @@ struct Sandbox2DLayer{
 
     color::Vector{Float32}
     scene::Hazel.Scene
+    particles::ParticleSystem
 end
 
 function Sandbox2DLayer(name = "Sandbox2D")
@@ -57,7 +60,8 @@ function Sandbox2DLayer(name = "Sandbox2D")
         name,
         camera_controller,
         Float32[0.2, 0.4, 0.8, 1.0],
-        scene
+        scene,
+        ParticleSystem(camera_controller.camera)
     )
 end
 
@@ -78,6 +82,23 @@ Hazel.@HZ_profile function Hazel.update!(l::Sandbox2DLayer, dt)
         Hazel.rotateby!(l.scene.render_objects[1].quads[2], Float32(5dt))
         Hazel.Renderer2D.submit(l.scene)
     end
+
+    Hazel.@HZ_profile "Render particles" begin
+        if Hazel.mousebutton_pressed(app, MOUSE_BUTTON_LEFT)
+            screen_pos = Hazel.mouse_pos(app)
+            ww, wh = Hazel.window(app).properties.width, Hazel.window(app).properties.height
+            pos = Hazel.position(l.camera_controller)
+            sw, sh = Hazel.width(l.camera_controller), Hazel.height(l.camera_controller)
+            x = (screen_pos[1] / ww - 0.5f0) * sw
+            y = (0.5f0 - screen_pos[2] / wh) * sh
+            particle_pos = Vec3f0(x, y, 2.0) .- pos
+            for _ in 1:5
+                emit!(l.particles, particle_pos, 0.005f0 * min(sw, sh))
+            end
+        end
+
+        update!(l.particles, dt)
+    end
     nothing
 end
 
@@ -93,7 +114,7 @@ Hazel.@HZ_profile function Hazel.handle!(l::Sandbox2DLayer, e::AbstractEvent)
     Hazel.handle!(l.camera_controller, e)
 end
 
-Hazel.destroy(l::Sandbox2DLayer) = Hazel.destroy(l.scene)
+Hazel.destroy(l::Sandbox2DLayer) = (Hazel.destroy(l.particles); Hazel.destroy(l.scene))
 Hazel.string(l::Sandbox2DLayer) = l.name
 
 

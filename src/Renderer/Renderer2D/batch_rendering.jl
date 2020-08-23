@@ -45,10 +45,11 @@ mutable struct Quad
     rotation::Float32
     scale::Vec3f0
     texture::Hazel.Texture2D
+    visible::Bool
 end
 
 function Base.show(io::IO, q::Quad)
-    println(io, "Quad")
+    println(io, "Quad" * (q.visible ? "" : " (hidden)"))
     println(io, "\tposition = $(q.position)")
     println(io, "\trotation = $(q.rotation)")
     println(io, "\tscale = $(q.scale)")
@@ -57,7 +58,7 @@ function Base.show(io::IO, q::Quad)
 end
 
 """
-    Quad(position, size[; rotation, color, texture, tilingfactor])
+    Quad(position, size[; rotation, color, texture, tilingfactor, visible])
 
 Creates a `Quad` at the given position with a given size.
 
@@ -70,7 +71,7 @@ Default keyword arguments:
 function Quad(
         position::Vec3f0, size::Vec2f0; rotation = 0f0,
         color::Vec4f0 = Vec4f0(1), texture = blank_texture[], 
-        tilingfactor::Float32 = 1f0
+        tilingfactor::Float32 = 1f0, visible=true
     )
     scale = Vec3f0(size..., 1f0); c = color; tf = tilingfactor
     T = Hazel.translationmatrix(position) *
@@ -81,7 +82,7 @@ function Quad(
         QuadVertex(T * Vec4f0( 0.5, -0.5, 0, 1), c, Vec2f0(1, 0), 0f0, tf),
         QuadVertex(T * Vec4f0( 0.5,  0.5, 0, 1), c, Vec2f0(1, 1), 0f0, tf),
         QuadVertex(T * Vec4f0(-0.5,  0.5, 0, 1), c, Vec2f0(0, 1), 0f0, tf)
-    ), position, Float32(rotation), scale, texture)
+    ), position, Float32(rotation), scale, texture, visible)
 end
 
 function recalculate!(q::Quad)
@@ -118,6 +119,10 @@ scaleto!(q, s::Real) = scaleto!(q, Float32(s))
 scaleby!(q, s::Real) = scaleby!(q, Float32(s))
 # TODO move this definition to Hazel somewhere
 export scaleto!, scaleby!
+
+function setcolor!(q::Quad, color::Vec4f0)
+    q.vertices = map(v -> QuadVertex(v, color=color), q.vertices)
+end
 
 
 struct Quads <: Hazel.AbstractRenderObject
@@ -226,7 +231,8 @@ end
 @HZ_profile function Hazel.render(q::Quads)
     # TODO: Can we reduce allocations here?
     # Hazel.upload!(Hazel.vertex_buffer(q.vertex_array), q.vertices)
-    Hazel.upload!(Hazel.vertex_buffer(q.vertex_array), [quad.vertices for quad in q.quads])
+    vba = [quad.vertices for quad in q.quads if quad.visible]
+    Hazel.upload!(Hazel.vertex_buffer(q.vertex_array), vba)
     for (k, v) in q.uniforms
         Hazel.upload!(q.shader, k, v)
     end
@@ -236,7 +242,7 @@ end
 
     Hazel.RenderCommand.draw_indexed(
         q.vertex_array,
-        trunc(Int64, 6length(q.quads))
+        trunc(Int64, 6length(vba))
     )
 end
 

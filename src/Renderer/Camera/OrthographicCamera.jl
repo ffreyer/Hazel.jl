@@ -10,7 +10,7 @@ end
 Creates an orthographic camera.
 """
 @HZ_profile function OrthographicCamera(
-        left::T, right::T, bottom::T, top::T, znear=T(-1), zfar=T(1)
+        left::T, right::T, bottom::T, top::T, znear=T(-10_000), zfar=T(10_000)
     ) where {T}
 
     projection = orthographicprojection(left, right, bottom, top, znear, zfar)
@@ -33,7 +33,7 @@ end
 
 function projection!(
         c::OrthographicCamera{T},
-        left::T, right::T, bottom::T, top::T, znear=T(-1), zfar=T(1)
+        left::T, right::T, bottom::T, top::T, znear=T(-10_000), zfar=T(10_000)
     ) where {T}
     c.projection = orthographicprojection(left, right, bottom, top, znear, zfar)
     recalculate!(c)
