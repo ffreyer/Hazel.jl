@@ -24,11 +24,12 @@ function Particle(;
         rotation = 360f0 * rand(Float32),  
         start_size = 0.01f0, stop_size = 0.01f0 + 0.01rand(Float32),
         life_time = 1f0+4rand(), life_remaining = life_time, 
-        active = false
+        active = false, kwargs...
     )
     quad = Hazel.Renderer2D.Quad(
         Vec3f0(position..., 0f0), Vec2f0(start_size), 
-        rotation=rotation, color = start_color, visible=active
+        rotation=rotation, color = start_color, visible=active;
+        kwargs...
     )
     Particle(
         quad,

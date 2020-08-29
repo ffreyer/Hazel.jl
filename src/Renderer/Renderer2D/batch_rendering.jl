@@ -71,17 +71,19 @@ Default keyword arguments:
 function Quad(
         position::Vec3f0, size::Vec2f0; rotation = 0f0,
         color::Vec4f0 = Vec4f0(1), texture = blank_texture[], 
-        tilingfactor::Float32 = 1f0, visible=true
+        tilingfactor::Float32 = 1f0, visible=true,
+        uv_lrbt = Float32[0, 1, 0, 1]
     )
     scale = Vec3f0(size..., 1f0); c = color; tf = tilingfactor
     T = Hazel.translationmatrix(position) *
         Hazel.rotationmatrix_z(rotation) * 
         Hazel.scalematrix(scale)
+    l, r, b, t = uv_lrbt
     return Quad((
-        QuadVertex(T * Vec4f0(-0.5, -0.5, 0, 1), c, Vec2f0(0, 0), 0f0, tf),
-        QuadVertex(T * Vec4f0( 0.5, -0.5, 0, 1), c, Vec2f0(1, 0), 0f0, tf),
-        QuadVertex(T * Vec4f0( 0.5,  0.5, 0, 1), c, Vec2f0(1, 1), 0f0, tf),
-        QuadVertex(T * Vec4f0(-0.5,  0.5, 0, 1), c, Vec2f0(0, 1), 0f0, tf)
+        QuadVertex(T * Vec4f0(-0.5, -0.5, 0, 1), c, Vec2f0(l, b), 0f0, tf),
+        QuadVertex(T * Vec4f0( 0.5, -0.5, 0, 1), c, Vec2f0(r, b), 0f0, tf),
+        QuadVertex(T * Vec4f0( 0.5,  0.5, 0, 1), c, Vec2f0(r, t), 0f0, tf),
+        QuadVertex(T * Vec4f0(-0.5,  0.5, 0, 1), c, Vec2f0(l, t), 0f0, tf)
     ), position, Float32(rotation), scale, texture, visible)
 end
 
