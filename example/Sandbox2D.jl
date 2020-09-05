@@ -1,4 +1,4 @@
-using Revise, Hazel, LinearAlgebra, Printf
+using Hazel, LinearAlgebra, Printf
 
 include("particles.jl")
 
@@ -83,8 +83,8 @@ function Sandbox2DLayer(name = "Sandbox2D")
 
     ps = ParticleSystem(
         camera_controller.camera,
-        # texture = spritesheet, 
-        # uv_lrbt = ind2uv(3, 4, 128, 128, spritesheet)
+        texture = spritesheet, 
+        uv_lrbt = ind2uv(3, 4, 128, 128, spritesheet)
     )
 
     Sandbox2DLayer(
@@ -109,13 +109,8 @@ Hazel.@HZ_profile function Hazel.update!(l::Sandbox2DLayer, dt)
     app = l.app[]
 
     Hazel.@HZ_profile "Update camera" update!(l.camera_controller, app, dt)
-
-    Hazel.@HZ_profile "Render Layer" begin
-        Hazel.RenderCommand.clear()
-        # Hazel.rotateby!(l.scene.render_objects[1].quads[2], Float32(5dt))
-        Hazel.Renderer2D.submit(l.scene)
-        Hazel.Renderer2D.submit(l.scene2)
-    end
+    
+    Hazel.RenderCommand.clear()
 
     Hazel.@HZ_profile "Render particles" begin
         if Hazel.mousebutton_pressed(app, MOUSE_BUTTON_LEFT)
@@ -133,6 +128,13 @@ Hazel.@HZ_profile function Hazel.update!(l::Sandbox2DLayer, dt)
 
         update!(l.particles, dt)
     end
+
+    Hazel.@HZ_profile "Render Layer" begin
+        # Hazel.rotateby!(l.scene.render_objects[1].quads[2], Float32(5dt))
+        Hazel.Renderer2D.submit(l.scene)
+        Hazel.Renderer2D.submit(l.scene2)
+    end
+
     nothing
 end
 

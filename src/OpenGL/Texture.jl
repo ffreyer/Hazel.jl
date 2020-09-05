@@ -42,7 +42,7 @@ end
 
 width(t::Texture2D) = t.size[1]
 height(t::Texture2D) = t.size[2]
-size(t::Texture2D) = t.size
+Base.size(t::Texture2D) = t.size
 # TODO glActiveTexture(GL_TEXTURE1) # TODO make list
 """
     bind(texture[, slot=1])
