@@ -17,8 +17,9 @@ using FileIO, ImageIO, FixedPointNumbers, ImageMagick # loading png files
 using TimerOutputs
 export print_timer, reset_timer!
 
-# projection stuff
-include("math/math.jl")
+# projection math, LRBT, transformations
+include("util/main.jl")
+export LRBT, moveto!, moveby!, rotateto!, rotateby!, scaleto!, scaleby!
 
 # currently just benchmarking/TimerOutputs extras
 include("debug/Instrumentation.jl")

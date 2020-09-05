@@ -13,13 +13,13 @@ mutable struct OrthographicCameraController{T} <: AbstractCameraController
     zoom_speed::T
 
     rotation_enabled::Bool
-    lrbt::NTuple{4, Float32}
+    lrbt::LRBT{Float32}
 end
 
 @HZ_profile function OrthographicCameraController(aspect_ratio; rotation=false)
     zoom = 1f0
     aspect_ratio = Float32(aspect_ratio)
-    lrbt = (-aspect_ratio * zoom, aspect_ratio * zoom, -zoom, zoom)
+    lrbt = LRBT{Float32}(-aspect_ratio * zoom, aspect_ratio * zoom, -zoom, zoom)
     cam = OrthographicCamera(lrbt...)
 
     OrthographicCameraController(
@@ -49,14 +49,14 @@ end
 @HZ_profile function handle!(c::OrthographicCameraController{T}, e::MouseScrolledEvent) where {T}
     c.zoom = max(0.1f0, c.zoom - T(c.zoom_speed * e.dy))
     c.translation_speed = c.zoom
-    c.lrbt = (-c.aspect_ratio * c.zoom, c.aspect_ratio * c.zoom, -c.zoom, c.zoom)
+    c.lrbt = LRBT{Float32}(-c.aspect_ratio * c.zoom, c.aspect_ratio * c.zoom, -c.zoom, c.zoom)
     projection!(c.camera, c.lrbt...)
     false
 end
 
 @HZ_profile function handle!(c::OrthographicCameraController{T}, e::WindowResizeEvent) where {T}
     c.aspect_ratio = T(e.width / e.height)
-    c.lrbt = (-c.aspect_ratio * c.zoom, c.aspect_ratio * c.zoom, -c.zoom, c.zoom)
+    c.lrbt = LRBT{Flöoat32}(-c.aspect_ratio * c.zoom, c.aspect_ratio * c.zoom, -c.zoom, c.zoom)
     projection!(c.camera, c.lrbt...)
     false
 end
@@ -91,10 +91,7 @@ end
 end
 @HZ_profile function moveby!(c::OrthographicCameraController{T}, offset::Vec3{T}) where {T<:Real}
     c.position += offset
-    c.lrbt = (
-        c.lrbt[1] + offset[1], c.lrbt[2] + offset[1],
-        c.lrbt[3] + offset[2], c.lrbt[4] + offset[2],
-    )
+    c.lrbt = c.lrbt + offset
     recalculate_view!(c.camera, c.position, c.rotation)
     c.position
 end
@@ -152,5 +149,5 @@ zoom(c::OrthographicCameraController) = c.zoom
 
 
 camera(c::OrthographicCameraController) = c.camera
-width(c::OrthographicCameraController) = c.lrbt[2] - c.lrbt[1]
-height(c::OrthographicCameraController) = c.lrbt[4] - c.lrbt[3]
+width(c::OrthographicCameraController) = c.lrbt.r - c.lrbt.l
+height(c::OrthographicCameraController) = c.lrbt.t - c.lrbt.b

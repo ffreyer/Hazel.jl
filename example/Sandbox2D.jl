@@ -3,15 +3,6 @@ using Hazel, LinearAlgebra, Printf
 include("particles.jl")
 
 
-function ind2uv(i, j, w, h, t::Hazel.Texture2D)
-    imgw, imgh = size(t)
-    l = (i-1) * w + 1
-    r = i * w
-    b = (j-1) * h + 1
-    t = j * h
-    (l/imgw, r/imgw, b/imgh, t/imgh)
-end
-
 struct Sandbox2DLayer{
         AT <: Hazel.AbstractApplication
     } <: Hazel.AbstractLayer
@@ -24,7 +15,7 @@ struct Sandbox2DLayer{
     scene::Hazel.Scene
     scene2::Hazel.Scene
     particles::ParticleSystem
-    spritesheet::Hazel.Texture2D{Hazel.RGBA{Hazel.N0f8}}
+    spritesheet::Hazel.RegularSpriteSheet{Hazel.Texture2D{Hazel.RGBA{Hazel.N0f8}}, Float32}
 end
 
 function Sandbox2DLayer(name = "Sandbox2D")
@@ -54,37 +45,27 @@ function Sandbox2DLayer(name = "Sandbox2D")
     scene = Hazel.Scene(camera_controller.camera)
     # push!(scene, quad1, quad2, quad3, quad4)
 
-    # # "Stress" test - goal: 100k+ @60
-    # for y in -5f0:0.1f0:5f0, x in -5f0:0.1f0:5f0
-    #     quad = Hazel.Renderer2D.Quad(
-    #         Vec3f0(x, y, 1), Vec2f0(0.45), 
-    #         color = Vec4f0((x+5f0)/10f0, 0.4f0, (y+5f0)/10f0, 0.7f0)
-    #     )
-    #     push!(scene, quad)
-    # end
-
     robjs = Hazel.render_objects(scene)
     @info length(robjs)
     @info map(quads -> length(quads.quads), robjs)
 
     # 2560 x 1664 ~ 20x13 Tiles @ 128x128
-    spritesheet = Hazel.Texture2D(joinpath(
+    # spritesheet = Hazel.RegularSpriteSheet(joinpath(
+    #     Hazel.assetpath, "textures/kenneyrpgpack/Spritesheet/RPGpack_sheet_2X.png"
+    # ), dw=128, dh=128)
+    spritesheet = Hazel.RegularSpriteSheet(joinpath(
         Hazel.assetpath, "textures/kenneyrpgpack/Spritesheet/RPGpack_sheet_2X.png"
-    ))
+    ), Nx=20, Ny=13)
 
     scene2 = Hazel.Scene(camera_controller.camera)
     push!(scene2,
-        Hazel.Renderer2D.Quad(
-            Vec3f0(0), Vec2f0(1), 
-            texture = spritesheet, 
-            uv_lrbt = ind2uv(3, 4, 128, 128, spritesheet)
-        )
+        Hazel.Renderer2D.Quad(Vec3f0(0), Vec2f0(1), texture = spritesheet[8, 6]), 
+        Hazel.Renderer2D.Quad(Vec3f0(1, 0.5, 1), Vec2f0(1, 2), texture = spritesheet[1, 2:3])
     )
 
     ps = ParticleSystem(
         camera_controller.camera,
-        texture = spritesheet, 
-        uv_lrbt = ind2uv(3, 4, 128, 128, spritesheet)
+        texture = spritesheet[3, 4]
     )
 
     Sandbox2DLayer(
