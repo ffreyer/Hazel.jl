@@ -46,18 +46,24 @@ end
     end
 end
 
-@HZ_profile function handle!(c::OrthographicCameraController{T}, e::MouseScrolledEvent) where {T}
-    c.zoom = max(0.1f0, c.zoom - T(c.zoom_speed * e.dy))
-    c.translation_speed = c.zoom
-    c.lrbt = LRBT{Float32}(-c.aspect_ratio * c.zoom, c.aspect_ratio * c.zoom, -c.zoom, c.zoom)
+function calculate_projection!(c::OrthographicCameraController)
+    c.lrbt = LRBT{Float32}(
+        -c.aspect_ratio * c.zoom, c.aspect_ratio * c.zoom, -c.zoom, c.zoom
+    )
     projection!(c.camera, c.lrbt...)
+    nothing
+end
+
+@HZ_profile function handle!(c::OrthographicCameraController{T}, e::MouseScrolledEvent) where {T}
+    c.zoom = max(1e-16, c.zoom - T(c.zoom_speed * e.dy))
+    c.translation_speed = c.zoom
+    calculate_projection!(c)
     false
 end
 
 @HZ_profile function handle!(c::OrthographicCameraController{T}, e::WindowResizeEvent) where {T}
     c.aspect_ratio = T(e.width / e.height)
-    c.lrbt = LRBT{Flöoat32}(-c.aspect_ratio * c.zoom, c.aspect_ratio * c.zoom, -c.zoom, c.zoom)
-    projection!(c.camera, c.lrbt...)
+    calculate_projection!(c)
     false
 end
 
@@ -139,7 +145,12 @@ rotateby!(c::OrthographicCameraController{T}, θ) where {T} = rotateby!(c, T(θ)
 
 Sets the zoom level of the camera_controller
 """
-zoom!(c::OrthographicCameraController{T}, zoom::T) where {T} = c.zoom = zoom
+function zoom!(c::OrthographicCameraController{T}, zoom) where {T}
+    c.zoom = T(zoom)
+    c.translation_speed = c.zoom
+    calculate_projection!(c)
+    nothing
+end
 """
     zoom(camera_controller)
 

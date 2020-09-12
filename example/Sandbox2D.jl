@@ -23,45 +23,51 @@ function Sandbox2DLayer(name = "Sandbox2D")
     camera_controller = Hazel.OrthographicCameraController(
         1280/720, rotation = true
     )
-
-    texture = Hazel.Texture2D(joinpath(Hazel.assetpath, "textures", "Checkerboard.png"))
-
-    quad1 = Hazel.Renderer2D.Quad(
-        Vec3f0(-1, -0.5, 0), Vec2f0(0.5), color = Vec4f0(0.7, 0.8, 1, 1)
-    )
-    quad2 = Hazel.Renderer2D.Quad(
-        Vec3f0(+1, -0.5, 0), Vec2f0(1.0), color = Vec4f0(1, 0.8, 0.7, 1),
-        texture = texture, tilingfactor = 10f0
-    )
-    quad3 = Hazel.Renderer2D.Quad(
-        Vec3f0(0, 0.5, 1), Vec2f0(0.7),  color = Vec4f0(0.3, 0.8, 0.4, 1),
-        texture = texture
-    )
-    quad4 = Hazel.Renderer2D.Quad(
-        Vec3f0(0, -0.5, 2rand()), Vec2f0(0.7),  color = Vec4f0(0.1, 0.3, 0.7, 1),
-        texture = texture, rotation=45
-    )
-
-    scene = Hazel.Scene(camera_controller.camera)
-    # push!(scene, quad1, quad2, quad3, quad4)
-
-    robjs = Hazel.render_objects(scene)
-    @info length(robjs)
-    @info map(quads -> length(quads.quads), robjs)
+    Hazel.zoom!(camera_controller, 10f0)
 
     # 2560 x 1664 ~ 20x13 Tiles @ 128x128
-    # spritesheet = Hazel.RegularSpriteSheet(joinpath(
-    #     Hazel.assetpath, "textures/kenneyrpgpack/Spritesheet/RPGpack_sheet_2X.png"
-    # ), dw=128, dh=128)
     spritesheet = Hazel.RegularSpriteSheet(joinpath(
         Hazel.assetpath, "textures/kenneyrpgpack/Spritesheet/RPGpack_sheet_2X.png"
     ), Nx=20, Ny=13)
 
     scene2 = Hazel.Scene(camera_controller.camera)
-    push!(scene2,
-        Hazel.Renderer2D.Quad(Vec3f0(0), Vec2f0(1), texture = spritesheet[8, 6]), 
-        Hazel.Renderer2D.Quad(Vec3f0(1, 0.5, 1), Vec2f0(1, 2), texture = spritesheet[1, 2:3])
-    )
+    # push!(scene,
+    #     # Hazel.Renderer2D.Quad(Vec3f0(-2, 0, 9), Vec2f0(1), texture = spritesheet[1, 12]), 
+    #     # Hazel.Renderer2D.Quad(Vec3f0(-1, 0, 9), Vec2f0(1), texture = spritesheet[2, 12]), 
+    #     # Hazel.Renderer2D.Quad(Vec3f0(0), Vec2f0(1), texture = spritesheet[8, 6]), 
+    #     Hazel.Renderer2D.Quad(Vec3f0(1, 0.5, 1), Vec2f0(1, 2), texture = spritesheet[1, 2:3])
+    # )
+
+    
+    tilemap = let
+        char2tilecoord = Dict(
+            'W' => spritesheet[12, 12], 'D' => spritesheet[7, 12],
+            '\\' => spritesheet[9, 1]
+        )
+        map_input = """
+        WWWW WWWW WWWW WWWW WWWW WWWW
+        WWWW WWWW WWWW WWWW WWWW WWWW
+        WWWW WWWW DDDD DDWW WWWW WWWW
+        WWWW WDDD DDDD DDWD DWWW WWWW
+        WWWW DDDD DDDD DWWD DDDW WWWW
+        WWWW DDDD DDDW WWDD DDDD WWWW
+        WWWD DDDD DDDW WWDD DDDD WWWW
+        WWWD DDDD DDDD WDDD DDDD DWWW
+        WWWD DDDD DDDD DDDD DDDD DWWW
+        WWWW DDDD DDDD DDDD DDDD DWWW
+        WWWW DDDD DDDD DDDD DDDD WWWW
+        WWWW WDDD DDDD DDDD DDDD WWWW
+        WWWW WWWD DWWW WWWW DDDW WWWW
+        WWWW WWWW WWWW WWWW WWWW WWWW"""
+        clean = replace(replace(map_input, ' ' => ""), '\n' => "")
+        tilemap = map(c -> haskey(char2tilecoord, c) ? char2tilecoord[c] : char2tilecoord['\\'], collect(clean))
+        reshape(tilemap, (24, 14))
+    end
+    for i in 1:size(tilemap, 1), j in 1:size(tilemap, 2)
+        push!(scene2, Hazel.Renderer2D.Quad(
+            Vec3f0(i-12, j-7, 0), Vec2f0(1), texture = tilemap[i, j]
+        ))
+    end
 
     ps = ParticleSystem(
         camera_controller.camera,
@@ -73,7 +79,7 @@ function Sandbox2DLayer(name = "Sandbox2D")
         name,
         camera_controller,
         Float32[0.2, 0.4, 0.8, 1.0],
-        scene, scene2,
+        scene2, scene2,
         ps,
         spritesheet
     )
