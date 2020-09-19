@@ -7,25 +7,13 @@ end
 
 # Interface
 function attach(l::ImGuiLayer, app::AbstractApplication)
-    # CImGui.CHECK_VERSION
     l.context = CImGui.CreateContext()
-    # TODO can we do this?
-    # io = CImGui.GetIO()
-    # io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;       // Enable Keyboard Controls
-    # //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-    # io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
-    # io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
-    # //io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoTaskBarIcons;
-    # //io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoMerge;
     CImGui.StyleColorsDark()
-    # style = CImGui.GetStyle()
     glfw_window = native_window(window(app))
     l.glfw_window = glfw_window
     # false because WE give ImGui inputs
     CImGui.GLFWBackend.ImGui_ImplGlfw_InitForOpenGL(glfw_window, false)
     CImGui.OpenGLBackend.ImGui_ImplOpenGL3_Init(410)
-
-    # :<
     GLFW.SetCharCallback(glfw_window, CImGui.GLFWBackend.ImGui_ImplGlfw_CharCallback)
 
     nothing

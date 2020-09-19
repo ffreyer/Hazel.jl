@@ -33,6 +33,12 @@ Cleans up the given `gpu_object`.
 """
 destroy
 
+"""
+    id(gpu_object)
+
+Returns the renderer id of a given `gpu_object`.
+"""
+id(o::AbstractGPUObject) = o.id
 
 
 # type conversions

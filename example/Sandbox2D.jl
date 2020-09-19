@@ -39,30 +39,45 @@ function Sandbox2DLayer(name = "Sandbox2D")
     # )
 
     
-    tilemap = let
-        char2tilecoord = Dict(
-            'W' => spritesheet[12, 12], 'D' => spritesheet[7, 12],
-            '\\' => spritesheet[9, 1]
-        )
-        map_input = """
-        WWWW WWWW WWWW WWWW WWWW WWWW
-        WWWW WWWW WWWW WWWW WWWW WWWW
-        WWWW WWWW DDDD DDWW WWWW WWWW
-        WWWW WDDD DDDD DDWD DWWW WWWW
-        WWWW DDDD DDDD DWWD DDDW WWWW
-        WWWW DDDD DDDW WWDD DDDD WWWW
-        WWWD DDDD DDDW WWDD DDDD WWWW
-        WWWD DDDD DDDD WDDD DDDD DWWW
-        WWWD DDDD DDDD DDDD DDDD DWWW
-        WWWW DDDD DDDD DDDD DDDD DWWW
-        WWWW DDDD DDDD DDDD DDDD WWWW
-        WWWW WDDD DDDD DDDD DDDD WWWW
-        WWWW WWWD DWWW WWWW DDDW WWWW
-        WWWW WWWW WWWW WWWW WWWW WWWW"""
-        clean = replace(replace(map_input, ' ' => ""), '\n' => "")
-        tilemap = map(c -> haskey(char2tilecoord, c) ? char2tilecoord[c] : char2tilecoord['\\'], collect(clean))
-        reshape(tilemap, (24, 14))
-    end
+    tilemap = string2map("""
+    WWWW WWWW WWWW WWWW WWWW WWWW
+    WWWW WWWW WWWW WWWW WWWW WWWW
+    WWWW WWWW GGGG GGWW WWWW WWWW
+    WWWW WGGG GGGG GGWG GWWW WWWW
+    WWWW GGGG GGGG GWWG GGGW WWWW
+    WWWW GGGG GGGW WWGG GGGG WWWW
+    WWWG GGGG GGGW WWGG GGGG WWWW
+    WWWG GGGG GGGG WGGG GGGG GWWW
+    WWWG GGGG GGGG GGGG GGGG GWWW
+    WWWW GGGG GGGG GGGG GGGG GWWW
+    WWWW GGGG GGGG GGGG GGGG WWWW
+    WWWW WGGG GGGG GGGG GGGG WWWW
+    WWWW WWWG GWWW WWWW GGGW WWWW
+    WWWW WWWW WWWW WWWW WWWW WWWW""", 24, 14, spritesheet)
+    # let
+    #     char2tilecoord = Dict(
+    #         'W' => spritesheet[12, 12], 'D' => spritesheet[7, 12],
+    #         '\\' => spritesheet[9, 1]
+    #     )
+    #     map_input = """
+    #     WWWW WWWW WWWW WWWW WWWW WWWW
+    #     WWWW WWWW WWWW WWWW WWWW WWWW
+    #     WWWW WWWW GGGG GGWW WWWW WWWW
+    #     WWWW WGGG GGGG GGWG GWWW WWWW
+    #     WWWW GGGG GGGG GWWG GGGW WWWW
+    #     WWWW GGGG GGGW WWGG GGGG WWWW
+    #     WWWG GGGG GGGW WWGG GGGG WWWW
+    #     WWWG GGGG GGGG WGGG GGGG GWWW
+    #     WWWG GGGG GGGG GGGG GGGG GWWW
+    #     WWWW GGGG GGGG GGGG GGGG GWWW
+    #     WWWW GGGG GGGG GGGG GGGG WWWW
+    #     WWWW WGGG GGGG GGGG GGGG WWWW
+    #     WWWW WWWG GWWW WWWW GGGW WWWW
+    #     WWWW WWWW WWWW WWWW WWWW WWWW"""
+    #     clean = replace(replace(map_input, ' ' => ""), '\n' => "")
+    #     tilemap = map(c -> haskey(char2tilecoord, c) ? char2tilecoord[c] : char2tilecoord['\\'], collect(clean))
+    #     reshape(tilemap, (24, 14))
+    # end
     for i in 1:size(tilemap, 1), j in 1:size(tilemap, 2)
         push!(scene2, Hazel.Renderer2D.Quad(
             Vec3f0(i-12, j-7, 0), Vec2f0(1), texture = tilemap[i, j]
@@ -83,6 +98,33 @@ function Sandbox2DLayer(name = "Sandbox2D")
         ps,
         spritesheet
     )
+end
+
+
+function string2map(chars::String, Lx, Ly, spritesheet)
+    char2sprite = Dict(
+        'W' => (12, 12), 'D' => (7, 12), 'G' => (2, 12), '\\' => (9, 1)
+    )
+    clean = replace(replace(chars, ' ' => ""), '\n'=>"")
+    charmap = reshape(collect(clean), (Lx, Ly))
+    tilemap = Matrix{typeof(spritesheet[1, 1])}(undef, Lx, Ly)
+    for x in 1:size(charmap, 1), y in 1:size(charmap, 2)
+        c = charmap[x, y]
+        sprite_idx = char2sprite[c]
+        if c in "W"
+            for dx in -1:1, dy in -1:1
+                abs(dx) + abs(dy) == 1 || continue
+                0 < x+dx < Lx || continue
+                0 < y+dy < Ly || continue
+                if c != charmap[x+dx, y+dy]
+                    sprite_idx = sprite_idx .+ (dx, dy)
+                end
+            end
+        end
+        tilemap[x, y] = spritesheet[sprite_idx...]
+    end
+
+    tilemap
 end
 
 
