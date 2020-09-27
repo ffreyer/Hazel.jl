@@ -1,5 +1,5 @@
-# Maybe <: AbstractTexture?
-struct Framebuffer <: AbstractGPUObject
+
+mutable struct Framebuffer <: AbstractGPUObject
     fb_id::UInt32
     t_id::UInt32
     d_id::UInt32
@@ -41,7 +41,7 @@ function Framebuffer(width=800, height=600)
     glBindFramebuffer(GL_FRAMEBUFFER, 0)
     # @assert glFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE
 
-    Framebuffer(fb_id, t_id, d_id, (width, height), false)
+    finalizer(destroy, Framebuffer(fb_id, t_id, d_id, (width, height), false))
 end
 
 destroy(fb::Framebuffer) = glDeleteFramebuffers(1, fb.fb_id)

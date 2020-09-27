@@ -1,6 +1,6 @@
 # TODO
 # Does this need to be able to have multiple vertex buffers? index buffers?
-struct VertexArray <: AbstractVertexArray
+mutable struct VertexArray <: AbstractVertexArray
     vb::VertexBuffer
     ib::IndexBuffer
     id::UInt32
@@ -38,7 +38,7 @@ from the gpu.
     end
     bind(index_buffer)
 
-    VertexArray(vertex_buffer, index_buffer, id[])
+    finalizer(destroy, VertexArray(vertex_buffer, index_buffer, id[]))
 end
 @HZ_profile bind(va::VertexArray) = glBindVertexArray(va.id)
 @HZ_profile unbind(va::VertexArray) = glBindVertexArray(0)

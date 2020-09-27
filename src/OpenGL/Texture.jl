@@ -1,4 +1,4 @@
-struct Texture2D{CT <: Colorant} <: AbstractTexture
+mutable struct Texture2D{CT <: Colorant} <: AbstractTexture
     path::String
     size::Tuple{UInt32, UInt32}
     id::UInt32
@@ -37,7 +37,7 @@ end
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _size..., data_format, GL_UNSIGNED_BYTE, _img)
     #glTexImage2D(GL_TEXTURE_2D, 0, type, _size..., 0, type, GL_UNSIGNED_BYTE, _img)
 
-    Texture2D{eltype(img)}(path, _size, id, internal_format, data_format)
+    finalizer(destroy, Texture2D{eltype(img)}(path, _size, id, internal_format, data_format))
 end
 
 width(t::Texture2D) = t.size[1]

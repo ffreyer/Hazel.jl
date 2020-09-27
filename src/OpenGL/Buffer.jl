@@ -3,7 +3,7 @@
 ################################################################################
 
 
-struct VertexBuffer <: AbstractVertexBuffer
+mutable struct VertexBuffer <: AbstractVertexBuffer
     # TODO can this be UInt32?
     # Needs to be reference in delete!
     # but can we remake that reference on the fly? Or use a Pointer
@@ -27,7 +27,7 @@ from the gpu.
     glGenBuffers(1, id)
     glBindBuffer(GL_ARRAY_BUFFER, id[])
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW)
-    VertexBuffer(id[], layout)
+    finalizer(destroy, VertexBuffer(id[], layout))
 end
 """
     VertexBuffer(length::Integer, layout::BufferLayout)
@@ -39,7 +39,7 @@ length is the number of vertices, so multiplied by sizeof(layout)
     glGenBuffers(1, id)
     glBindBuffer(GL_ARRAY_BUFFER, id[])
     glBufferData(GL_ARRAY_BUFFER, sizeof(layout) * length, C_NULL, GL_DYNAMIC_DRAW)
-    VertexBuffer(id[], layout)
+    finalizer(destroy, VertexBuffer(id[], layout))
 end
 @HZ_profile bind(buffer::VertexBuffer) = glBindBuffer(GL_ARRAY_BUFFER, buffer.id)
 @HZ_profile unbind(buffer::VertexBuffer) = glBindBuffer(GL_ARRAY_BUFFER, 0)
@@ -62,7 +62,7 @@ end
 ################################################################################
 
 
-struct IndexBuffer <: AbstractIndexBuffer
+mutable struct IndexBuffer <: AbstractIndexBuffer
     id::UInt32
     length::Int
 end
@@ -83,7 +83,7 @@ from the gpu.
     glGenBuffers(1, id)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id[])
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW)
-    IndexBuffer(id[], length(indices))
+    finalizer(destroy, IndexBuffer(id[], length(indices)))
 end
 @HZ_profile bind(buffer::IndexBuffer) = glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer.id)
 @HZ_profile unbind(buffer::IndexBuffer) = glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)

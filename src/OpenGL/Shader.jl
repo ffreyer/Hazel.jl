@@ -1,4 +1,4 @@
-struct Shader <: AbstractShader
+mutable struct Shader <: AbstractShader
     id::UInt32
     name::String
 end
@@ -149,7 +149,7 @@ function compile(sources::Vector{Pair{UInt32, String}}; name::String)
         glDetachShader(program, shader)
     end
 
-    return Shader(program[], name)
+    return finalizer(destroy, Shader(program[], name))
 end
 
 destroy(shader::Shader) = glDeleteProgram(shader.id)
