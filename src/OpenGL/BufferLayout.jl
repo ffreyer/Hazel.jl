@@ -46,7 +46,7 @@ Any type wrapped in `Normalize` will be normalized on the GPU.
 struct LazyBufferLayout{Types, N} <: BufferLayout
     names::NTuple{N, Symbol}
     offsets::NTuple{N, Int64}
-    id::Ref{UInt32}
+    # id::Ref{UInt32}
 end
 
 function LazyBufferLayout(pairs::Pair{Symbol, DataType}...)
@@ -55,7 +55,7 @@ function LazyBufferLayout(pairs::Pair{Symbol, DataType}...)
     LazyBufferLayout{Tuple{types...}, length(pairs)}(
         tuple(first.(pairs)...),
         tuple(offsets...),
-        Ref{UInt32}()
+        # Ref{UInt32}()
     )
 end
 function LazyBufferLayout(pairs::Pair...)

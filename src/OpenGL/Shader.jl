@@ -1,5 +1,5 @@
 struct Shader <: AbstractShader
-    id::Ref{UInt32}
+    id::UInt32
     name::String
 end
 
@@ -149,11 +149,11 @@ function compile(sources::Vector{Pair{UInt32, String}}; name::String)
         glDetachShader(program, shader)
     end
 
-    return Shader(program, name)
+    return Shader(program[], name)
 end
 
-destroy(shader::Shader) = glDeleteProgram(shader.id[])
-@HZ_profile bind(shader::Shader) = glUseProgram(shader.id[])
+destroy(shader::Shader) = glDeleteProgram(shader.id)
+@HZ_profile bind(shader::Shader) = glUseProgram(shader.id)
 @HZ_profile unbind(shader::Shader) = glUseProgram(0)
 name(shader::Shader) = shader.name
 
@@ -172,7 +172,7 @@ function upload!(shader::Shader; kwargs...)
 end
 upload!(shader::Shader, name::Symbol, v) = upload!(shader, string(name), v)
 @HZ_profile function upload!(shader::Shader, name::String, v)
-    location = glGetUniformLocation(shader.id[], name)
+    location = glGetUniformLocation(shader.id, name)
     location == -1 && throw(ErrorException("$name is not a valid uniform name!"))
     _upload!(shader, location, v)
 end

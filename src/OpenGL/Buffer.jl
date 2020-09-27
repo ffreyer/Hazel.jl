@@ -7,7 +7,7 @@ struct VertexBuffer <: AbstractVertexBuffer
     # TODO can this be UInt32?
     # Needs to be reference in delete!
     # but can we remake that reference on the fly? Or use a Pointer
-    id::Ref{UInt32}
+    id::UInt32
     layout::LazyBufferLayout
 end
 
@@ -27,7 +27,7 @@ from the gpu.
     glGenBuffers(1, id)
     glBindBuffer(GL_ARRAY_BUFFER, id[])
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW)
-    VertexBuffer(id, layout)
+    VertexBuffer(id[], layout)
 end
 """
     VertexBuffer(length::Integer, layout::BufferLayout)
@@ -39,11 +39,11 @@ length is the number of vertices, so multiplied by sizeof(layout)
     glGenBuffers(1, id)
     glBindBuffer(GL_ARRAY_BUFFER, id[])
     glBufferData(GL_ARRAY_BUFFER, sizeof(layout) * length, C_NULL, GL_DYNAMIC_DRAW)
-    VertexBuffer(id, layout)
+    VertexBuffer(id[], layout)
 end
-@HZ_profile bind(buffer::VertexBuffer) = glBindBuffer(GL_ARRAY_BUFFER, buffer.id[])
+@HZ_profile bind(buffer::VertexBuffer) = glBindBuffer(GL_ARRAY_BUFFER, buffer.id)
 @HZ_profile unbind(buffer::VertexBuffer) = glBindBuffer(GL_ARRAY_BUFFER, 0)
-destroy(buffer::VertexBuffer) = glDeleteBuffers(1, buffer.id)
+destroy(buffer::VertexBuffer) = glDeleteBuffers(1, Ref(buffer.id))
 """
     layout(vertex_buffer)
 
@@ -63,7 +63,7 @@ end
 
 
 struct IndexBuffer <: AbstractIndexBuffer
-    id::Ref{UInt32}
+    id::UInt32
     length::Int
 end
 
@@ -83,9 +83,9 @@ from the gpu.
     glGenBuffers(1, id)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id[])
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW)
-    IndexBuffer(id, length(indices))
+    IndexBuffer(id[], length(indices))
 end
-@HZ_profile bind(buffer::IndexBuffer) = glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer.id[])
+@HZ_profile bind(buffer::IndexBuffer) = glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer.id)
 @HZ_profile unbind(buffer::IndexBuffer) = glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
-destroy(buffer::IndexBuffer) = glDeleteBuffers(1, buffer.id)
+destroy(buffer::IndexBuffer) = glDeleteBuffers(1, Ref(buffer.id))
 Base.length(buffer::IndexBuffer) = buffer.length

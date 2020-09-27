@@ -3,7 +3,7 @@
 struct VertexArray <: AbstractVertexArray
     vb::VertexBuffer
     ib::IndexBuffer
-    id::Ref{UInt32}
+    id::UInt32
 end
 
 """
@@ -38,12 +38,12 @@ from the gpu.
     end
     bind(index_buffer)
 
-    VertexArray(vertex_buffer, index_buffer, id)
+    VertexArray(vertex_buffer, index_buffer, id[])
 end
-@HZ_profile bind(va::VertexArray) = glBindVertexArray(va.id[])
+@HZ_profile bind(va::VertexArray) = glBindVertexArray(va.id)
 @HZ_profile unbind(va::VertexArray) = glBindVertexArray(0)
 function destroy(va::VertexArray)
-    glDeleteVertexArrays(1, va.id)
+    glDeleteVertexArrays(1, Ref(va.id))
     destroy(va.vb)
     destroy(va.ib)
 end

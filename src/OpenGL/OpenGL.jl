@@ -17,7 +17,7 @@ abstract type AbstractTexture <: AbstractGPUObject end
 
 Binds the given `gpu_object`.
 """
-bind
+Base.bind
 
 """
     unbind(gpu_onject)

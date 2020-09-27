@@ -144,8 +144,8 @@ Hazel.@HZ_profile function Hazel.update!(l::Sandbox2DLayer, dt)
 
     Hazel.@HZ_profile "Update camera" update!(l.camera_controller, app, dt)
     
-    Hazel.bind(l.framebuffer[])
     Hazel.RenderCommand.clear()
+    Hazel.bind(l.framebuffer[])
 
     Hazel.@HZ_profile "Render particles" begin
         if Hazel.mousebutton_pressed(app, MOUSE_BUTTON_LEFT)
