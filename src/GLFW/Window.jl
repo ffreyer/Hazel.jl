@@ -121,3 +121,4 @@ end
 @inline native_window(window::Window) = native_window(window.context)
 
 aspect_ratio(w::Window) = aspect_ratio(w.properties)
+Base.size(w::Window) = (w.properties.width, w.properties.height)

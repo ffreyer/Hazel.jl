@@ -58,7 +58,7 @@ between 1 and 32
     glActiveTexture(GL_TEXTURE0)
 end
 @HZ_profile unbind(t::Texture2D) = glBindTexture(GL_TEXTURE_2D, 0) #glBindTextureUnit
-destroy(t::Texture2D) = glDeleteTextures(id)
+destroy(t::Texture2D) = glDeleteTextures(1, Ref(t.id))
 
 img2bytes(img::Matrix{RGBA}) = [UInt8(x.i) for c in img for x in (c.r, c.g, c.b, c.alpha)]
 img2bytes(img::Matrix{RGB}) = [UInt8(x.i) for c in img for x in (c.r, c.g, c.b)]

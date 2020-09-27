@@ -10,6 +10,7 @@ struct Sandbox2DLayer{
     app::Ref{AT}
     name::String
     camera_controller::Hazel.OrthographicCameraController
+    framebuffer::Ref{Hazel.Framebuffer}
 
     color::Vector{Float32}
     scene::Hazel.Scene
@@ -93,6 +94,7 @@ function Sandbox2DLayer(name = "Sandbox2D")
         Ref{Hazel.BasicApplication}(),
         name,
         camera_controller,
+        Ref{Hazel.Framebuffer}(),
         Float32[0.2, 0.4, 0.8, 1.0],
         scene2, scene2,
         ps,
@@ -131,6 +133,9 @@ end
 function Hazel.attach(l::Sandbox2DLayer, app::AbstractApplication)
     @info "Attaching $(typeof(app))"
     l.app[] = app
+    l.framebuffer[] = Hazel.Framebuffer(size(Hazel.window(app))...)
+    id = l.framebuffer[].t_id
+    Hazel.CImGui.OpenGLBackend.g_ImageTexture[Int(id)] = id
 end
 
 
@@ -139,6 +144,7 @@ Hazel.@HZ_profile function Hazel.update!(l::Sandbox2DLayer, dt)
 
     Hazel.@HZ_profile "Update camera" update!(l.camera_controller, app, dt)
     
+    Hazel.bind(l.framebuffer[])
     Hazel.RenderCommand.clear()
 
     Hazel.@HZ_profile "Render particles" begin
@@ -163,14 +169,18 @@ Hazel.@HZ_profile function Hazel.update!(l::Sandbox2DLayer, dt)
         Hazel.Renderer2D.submit(l.scene)
         Hazel.Renderer2D.submit(l.scene2)
     end
+    Hazel.unbind(l.framebuffer[])
 
     nothing
 end
 
 Hazel.@HZ_profile function Hazel.update!(gui_layer::Hazel.ImGuiLayer, sl::Sandbox2DLayer, dt)
-    Hazel.CImGui.ColorEdit4("Square color", sl.color)
+    # Hazel.CImGui.ColorEdit4("Square color", sl.color)
     # qvs = sl.scene.render_objects[1].vertices
     # qvs[3] = Hazel.Renderer2D.QuadVertex(qvs[3].position, Vec4f0(sl.color...), qvs[3].uv)
+    Hazel.CImGui.Begin("Framebuffer")
+    Hazel.CImGui.Image(Ptr{Cvoid}(Int(sl.framebuffer[].t_id)), (320f0, 180f0))
+    Hazel.CImGui.End()
     nothing
 end
 

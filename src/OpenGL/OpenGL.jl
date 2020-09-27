@@ -54,3 +54,4 @@ include("VertexArray.jl")
 # Layer of abstraction between Renderer and backend
 include("RenderCommand.jl")
 include("Texture.jl")
+include("FrameBuffer.jl")
