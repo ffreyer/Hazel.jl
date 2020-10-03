@@ -59,12 +59,20 @@ include("GLFW/GLFW.jl")
 export WindowProperties, AbstractWindow, Window
 export isopen, enable_vsync, disable_vsync, native_window
 export keypressed, mousebutton_pressed, mouse_pos, mouse_x, mouse_y
+# export GraphicsContext, init, swap_buffers, native_window
 
 
 # OpenGL Implementations of stuff
 include("OpenGL/OpenGL.jl")
 # export gltype,
 # export RenderCommand, clear, draw_indexed
+export Shader, upload!
+export VertexArray, vertex_buffer, index_buffer
+export Texture2D
+export BufferLayout, Normalize
+# export offsets, types, name, offset, type, elsizeof, normalized # needed?
+export AbstractGPUObject, AbstractGPUBuffer, bind, unbind
+export AbstractVertexBuffer, layout, AbstractIndexBuffer
 
 
 using CImGui
@@ -73,20 +81,14 @@ include("Layers/ImGuiLayer.jl")
 
 # Buffers, shaders, etc
 include("Renderer/main.jl")
-export AbstractCamera, OrthographicCamera
-export moveto!, moveby!, position, rotateto!, rotateby!, rotation
+export AbstractCamera, OrthographicCamera, OrthographicCameraController
+export moveto!, moveby!, position, rotateto!, rotateby!, rotation, zoom, zoom!
+export RegularSpriteSheet
 # export projection, view, projection_view # Should these be exported?
-export AbstractGPUObject, AbstractGPUBuffer, bind, unbind
-export AbstractVertexBuffer, layout, AbstractIndexBuffer
-export BufferLayout, Normalize
-# export offsets, types, name, offset, type, elsizeof, normalized # needed?
-# export GraphicsContext, init, swap_buffers, native_window
 export Renderer, submit
-# export clear, draw_indexed
+export Renderer2D
 export RenderObject, Scene, camera
-export Shader, upload!
-export VertexArray, vertex_buffer, index_buffer
-export Texture2D
+
 
 
 
@@ -98,7 +100,6 @@ export Texture2D
 include("Application/Application.jl")
 export AbstractApplication, BasicApplication
 export init!, destroy
-
 
 const assetpath = joinpath((@__DIR__())[1:end-3], "assets")
 

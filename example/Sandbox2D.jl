@@ -10,7 +10,6 @@ struct Sandbox2DLayer{
     app::Ref{AT}
     name::String
     camera_controller::Hazel.OrthographicCameraController
-    framebuffer::Ref{Hazel.Framebuffer}
 
     color::Vector{Float32}
     scene::Hazel.Scene
@@ -32,6 +31,7 @@ function Sandbox2DLayer(name = "Sandbox2D")
     ), Nx=20, Ny=13)
 
     scene2 = Hazel.Scene(camera_controller.camera)
+
     # push!(scene,
     #     # Hazel.Renderer2D.Quad(Vec3f0(-2, 0, 9), Vec2f0(1), texture = spritesheet[1, 12]), 
     #     # Hazel.Renderer2D.Quad(Vec3f0(-1, 0, 9), Vec2f0(1), texture = spritesheet[2, 12]), 
@@ -94,7 +94,6 @@ function Sandbox2DLayer(name = "Sandbox2D")
         Ref{Hazel.BasicApplication}(),
         name,
         camera_controller,
-        Ref{Hazel.Framebuffer}(),
         Float32[0.2, 0.4, 0.8, 1.0],
         scene2, scene2,
         ps,
@@ -133,9 +132,6 @@ end
 function Hazel.attach(l::Sandbox2DLayer, app::AbstractApplication)
     @info "Attaching $(typeof(app))"
     l.app[] = app
-    l.framebuffer[] = Hazel.Framebuffer(size(Hazel.window(app))...)
-    id = l.framebuffer[].t_id
-    Hazel.CImGui.OpenGLBackend.g_ImageTexture[Int(id)] = id
 end
 
 
@@ -145,7 +141,6 @@ Hazel.@HZ_profile function Hazel.update!(l::Sandbox2DLayer, dt)
     Hazel.@HZ_profile "Update camera" update!(l.camera_controller, app, dt)
     
     Hazel.RenderCommand.clear()
-    Hazel.bind(l.framebuffer[])
 
     Hazel.@HZ_profile "Render particles" begin
         if Hazel.mousebutton_pressed(app, MOUSE_BUTTON_LEFT)
@@ -169,7 +164,6 @@ Hazel.@HZ_profile function Hazel.update!(l::Sandbox2DLayer, dt)
         Hazel.Renderer2D.submit(l.scene)
         Hazel.Renderer2D.submit(l.scene2)
     end
-    Hazel.unbind(l.framebuffer[])
 
     nothing
 end
@@ -178,9 +172,6 @@ Hazel.@HZ_profile function Hazel.update!(gui_layer::Hazel.ImGuiLayer, sl::Sandbo
     # Hazel.CImGui.ColorEdit4("Square color", sl.color)
     # qvs = sl.scene.render_objects[1].vertices
     # qvs[3] = Hazel.Renderer2D.QuadVertex(qvs[3].position, Vec4f0(sl.color...), qvs[3].uv)
-    Hazel.CImGui.Begin("Framebuffer")
-    Hazel.CImGui.Image(Ptr{Cvoid}(Int(sl.framebuffer[].t_id)), (320f0, 180f0))
-    Hazel.CImGui.End()
     nothing
 end
 
@@ -189,7 +180,6 @@ Hazel.@HZ_profile function Hazel.handle!(l::Sandbox2DLayer, e::AbstractEvent)
     Hazel.handle!(l.camera_controller, e)
 end
 
-Hazel.destroy(l::Sandbox2DLayer) = (Hazel.destroy(l.particles); Hazel.destroy(l.scene))
 Hazel.string(l::Sandbox2DLayer) = l.name
 
 
@@ -208,3 +198,10 @@ end
 
 # This allows running `julia Sandbox2D.jl` without it exiting immediately
 # wait(task)
+
+
+# TODO (outside of videos)
+# - Generalize Texture wrapper
+# - rewrite Framebuffer accordingly
+# - use glGen like Makie maybe?
+# - 

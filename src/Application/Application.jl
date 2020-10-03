@@ -8,11 +8,11 @@ mutable struct BasicApplication <: AbstractApplication
     # allow MutableLayerStack -> StaticLayerStack
     layerstack::AbstractLayerStack
 end
-@HZ_profile function BasicApplication()
+@HZ_profile function BasicApplication(name="Hazel")
     @info "Application starting up"
 
     app = BasicApplication(
-        Window(e -> handle!(app, e)),
+        Window(e -> handle!(app, e), name=name),
         true, false,
         MutableLayerStack()
     )

@@ -92,5 +92,3 @@ function emit!(ps::ParticleSystem, pos::Vec3f0, scale::Float32)
     # println(p)
     ps.idx = mod1(ps.idx+1, length(ps.pool))
 end
-
-Hazel.destroy(ps::ParticleSystem) = Hazel.destroy(ps.scene)
