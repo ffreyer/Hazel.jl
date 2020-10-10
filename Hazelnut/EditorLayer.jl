@@ -105,8 +105,11 @@ end
 
     @HZ_profile "Update camera" update!(l.camera_controller, app, dt)
     
+    # Clear window
     RenderCommand.clear()
     Hazel.bind(l.framebuffer[])
+    # Clear framebuffer
+    RenderCommand.clear()
 
     @HZ_profile "Render Layer" begin
         Renderer2D.submit(l.scene)
@@ -118,9 +121,18 @@ end
 end
 
 @HZ_profile function Hazel.update!(gui_layer::ImGuiLayer, sl::EditorLayer, dt)
-    CImGui.Begin("Framebuffer")
-    CImGui.Image(Ptr{Cvoid}(Int(sl.framebuffer[].t_id)), (320f0, 180f0))
+    CImGui.PushStyleVar(CImGui.ImGuiStyleVar_WindowPadding, (0, 0))
+    CImGui.Begin("Viewport")
+    window_size = CImGui.GetContentRegionAvail()
+    if window_size != size(sl.framebuffer[])
+        w = trunc(UInt32, window_size.x); h = trunc(UInt32, window_size.y)
+        resize!(sl.framebuffer[], w, h)
+        resize!(sl.camera_controller, w, h)
+        update!(sl, 0.0)
+    end
+    CImGui.Image(Ptr{Cvoid}(Int(sl.framebuffer[].t_id)), window_size, (0, 1), (1, 0))
     CImGui.End()
+    CImGui.PopStyleVar()
     nothing
 end
 

@@ -44,9 +44,33 @@ function Framebuffer(width=800, height=600)
     finalizer(destroy, Framebuffer(fb_id, t_id, d_id, (width, height), false))
 end
 
-destroy(fb::Framebuffer) = glDeleteFramebuffers(1, fb.fb_id)
-bind(fb::Framebuffer) = glBindFramebuffer(GL_FRAMEBUFFER, fb.fb_id)
+function destroy(fb::Framebuffer)
+    glDeleteTextures(1, fb.t_id)
+    glDeleteTextures(1, fb.d_id)
+    glDeleteFramebuffers(1, fb.fb_id)
+end
+
+function bind(fb::Framebuffer)
+    glBindFramebuffer(GL_FRAMEBUFFER, fb.fb_id)
+    glViewport(0, 0, fb.size...)
+end
 unbind(::Framebuffer) = glBindFramebuffer(GL_FRAMEBUFFER, 0)
 Base.size(fb::Framebuffer) = fb.size
+
+Base.resize!(fb::Framebuffer, widths) = resize!(fb, widths...)
+function Base.resize!(fb::Framebuffer, w, h)
+    glBindTexture(GL_TEXTURE_2D, fb.t_id)
+    glTexImage2D(
+        GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, 
+        GL_RGBA, GL_UNSIGNED_BYTE, C_NULL
+    )
+    glBindTexture(GL_TEXTURE_2D, fb.d_id)
+    glTexImage2D(
+        GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, w, h, 0, 
+        GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, C_NULL
+    )
+    glBindTexture(GL_TEXTURE_2D, 0)
+    fb.size = (UInt32(w), UInt32(h))
+end
 
 color_attachment(fb::Framebuffer) = fb.t_id 

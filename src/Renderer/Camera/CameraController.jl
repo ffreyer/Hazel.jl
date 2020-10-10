@@ -62,11 +62,16 @@ end
 end
 
 @HZ_profile function handle!(c::OrthographicCameraController{T}, e::WindowResizeEvent) where {T}
-    c.aspect_ratio = T(e.width / e.height)
-    calculate_projection!(c)
+    resize!(c, e.width, e.height)
     false
 end
 
+
+function Base.resize!(c::OrthographicCameraController{T}, w, h) where T
+    c.aspect_ratio = T(w/h)
+    calculate_projection!(c)
+    nothing
+end
 
 
 """

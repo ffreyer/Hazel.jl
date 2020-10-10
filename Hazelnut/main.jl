@@ -3,7 +3,7 @@ using Hazel
 include("EditorLayer.jl")
 
 begin
-    app = BasicApplication()
+    app = BasicApplication("Hazelnut")
     # Hazel.disable_vsync(Hazel.window(app))
     try
         sl = EditorLayer()
