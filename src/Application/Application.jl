@@ -24,6 +24,7 @@ end
     @info (glGetString(GL_VENDOR) |> unsafe_string)
     @info (glGetString(GL_RENDERER) |> unsafe_string)
     @info (glGetString(GL_VERSION) |> unsafe_string)
+    @info (glGetString(GL_SHADING_LANGUAGE_VERSION) |> unsafe_string)
 
     app
 end
