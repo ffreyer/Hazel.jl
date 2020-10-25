@@ -162,6 +162,12 @@ end
 function restore!(app::AbstractApplication)
     app.minimized = false
 end
-@HZ_profile function resize!(app::AbstractApplication, width, height)
-    Renderer.resize!(width, height)
+const __max_screen_size = 16384
+@HZ_profile function resize!(app::AbstractApplication, width::Integer, height::Integer)
+    if (1 ≤ width ≤ __max_screen_size) && (1 ≤ height ≤ __max_screen_size)
+        Renderer.resize!(width, height)
+    else
+        @warn "Attempt to resize to ($width, $height) failed."
+    end
+    return nothing
 end

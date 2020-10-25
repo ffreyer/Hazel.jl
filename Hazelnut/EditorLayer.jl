@@ -126,7 +126,7 @@ end
 @HZ_profile function Hazel.update!(gui_layer::ImGuiLayer, sl::EditorLayer, dt)
     CImGui.PushStyleVar(CImGui.ImGuiStyleVar_WindowPadding, (0, 0))
     CImGui.Begin("Viewport")
-    l.viewport_focused[] = CImGui.IsWindowFocus()
+    l.viewport_focused[] = CImGui.IsWindowFocused()
     gui_layer.consume_events = !(l.viewport_focused[]) || !CimGui.IsWindowHovered()
     window_size = CImGui.GetContentRegionAvail()
     if window_size != size(sl.framebuffer[])
