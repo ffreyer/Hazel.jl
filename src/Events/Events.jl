@@ -24,7 +24,8 @@ struct WindowMovedEvent <: WindowEvent end
 struct WindowMinimizedEvent <: WindowEvent end
 struct WindowRestoredEvent <: WindowEvent end
 
-# TODO: Apparently bad for performance -> move keycode to field?
+# TODO: 
+# Abuse of dispatch -> move keycode to field?
 struct KeyPressedEvent{keycode} <: KeyboardEvent{keycode}
     repeat_count::UInt32
     scancode::Cint
@@ -44,7 +45,6 @@ struct MouseScrolledEvent <: MouseEvent
     dx::Float64
     dy::Float64
 end
-# TODO: Apparently bad for performance
 struct MouseButtonPressedEvent{button} <: MouseButtonEvent{button}
     mods::Cint
 end
