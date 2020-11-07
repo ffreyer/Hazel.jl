@@ -126,8 +126,8 @@ end
 @HZ_profile function Hazel.update!(gui_layer::ImGuiLayer, sl::EditorLayer, dt)
     CImGui.PushStyleVar(CImGui.ImGuiStyleVar_WindowPadding, (0, 0))
     CImGui.Begin("Viewport")
-    l.viewport_focused[] = CImGui.IsWindowFocused()
-    gui_layer.consume_events = !(l.viewport_focused[]) || !CimGui.IsWindowHovered()
+    sl.viewport_focused[] = CImGui.IsWindowFocused()
+    gui_layer.consume_events = !(sl.viewport_focused[]) || !CImGui.IsWindowHovered()
     window_size = CImGui.GetContentRegionAvail()
     if window_size != size(sl.framebuffer[])
         w = trunc(UInt32, window_size.x); h = trunc(UInt32, window_size.y)
@@ -144,8 +144,9 @@ end
 
 @HZ_profile function Hazel.handle!(l::EditorLayer, e::AbstractEvent)
     if l.viewport_focused[]
-        handle!(l.camera_controller, e)
+        return handle!(l.camera_controller, e)
     end
+    false
 end
 
 Base.string(l::EditorLayer) = l.name
