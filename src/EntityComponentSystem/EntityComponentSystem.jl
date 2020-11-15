@@ -20,7 +20,9 @@
 #   e = Entity(ecs, "MyEntity") # attaches entity
 #   Component(ecs, e, ...) # attaches component to both
 
-
+# TODO
+# - better grouping maybe?
+# - script execution on connect etc?
 
 ################################################################################
 ### ComponentVector
@@ -128,6 +130,7 @@ end
 
 
 
+# Just a UInt32 in EnTT
 struct Entity
     ID::UInt64
     ecs::Registry
@@ -262,7 +265,7 @@ end
 # Usuage of EnTT:
 # mild translation
 # TODO remove
-
+#=
 struct MeshComponent end
 struct TransformComponent end
 
@@ -296,3 +299,4 @@ end
 for (transform, mesh) in group(registry, :transform, :mesh)
     submit(mesh, transform)
 end
+=#

@@ -100,6 +100,12 @@ function Hazel.attach(l::EditorLayer, app::AbstractApplication)
     l.framebuffer[] = Hazel.Framebuffer(size(Hazel.window(app))...)
     id = l.framebuffer[].t_id
     Hazel.CImGui.OpenGLBackend.g_ImageTexture[Int(id)] = id
+
+    #=
+    square = Entity(scene)
+    push!(square, :tranform, TransformComponent())
+    push!(square, :sprite, SpriteRendererComponent(Vec4f0(0,1,0,1)))
+    =#
 end
 
 
@@ -115,6 +121,7 @@ end
     RenderCommand.clear()
 
     @HZ_profile "Render Layer" begin
+        # maybe API change: push!(Renderer, scene)
         Renderer2D.submit(l.scene)
         Renderer2D.submit(l.scene2)
     end

@@ -11,7 +11,7 @@ abstract type AbstractApplication end
 # Maths
 using LinearAlgebra
 using Reexport
-@reexport using GeometryTypes, Colors
+@reexport using GeometryBasics, Colors
 using StaticArrays, Quaternions
 using FileIO, ImageIO, FixedPointNumbers, ImageMagick # loading png files
 using TimerOutputs
@@ -24,6 +24,10 @@ export LRBT, moveto!, moveby!, rotateto!, rotateby!, scaleto!, scaleby!
 # currently just benchmarking/TimerOutputs extras
 include("debug/Instrumentation.jl")
 export @HZ_profile
+
+# My simpel and porbably bad Entity component system :^)
+include("EntityComponentSystem/EntityComponentSystem.jl")
+
 
 # TODO
 # figure out where to put this
