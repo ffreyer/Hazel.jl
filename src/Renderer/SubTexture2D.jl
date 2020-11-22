@@ -1,6 +1,6 @@
-struct SubTexture{Tex <: Texture2D, T}
-    texture::Tex
-    lrbt::LRBT{T}
+struct SubTexture
+    texture::Texture2D
+    lrbt::LRBT{Float32}
 end
 
 
@@ -22,7 +22,7 @@ function SubTexture(texture::Texture2D, i, j, dw, dh)
     SubTexture(texture, ind2uv(i, j, dw, dh, texture))
 end
 
-function ind2uv(i, j, w, h, t::Hazel.Texture2D)
+function ind2uv(i, j, w, h, t::Texture2D)
     imgw, imgh = size(t)
     l = (i-1) * w
     r = i * w
@@ -36,9 +36,9 @@ uv(t::SubTexture) = t.lrbt
 
 
 
-struct RegularSpriteSheet{Tex, T}
-    texture::Tex
-    regions::Matrix{LRBT{T}}
+struct RegularSpriteSheet
+    texture::Texture2D
+    regions::Matrix{LRBT{Float32}}
 end
 
 """

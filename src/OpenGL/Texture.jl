@@ -1,9 +1,10 @@
-mutable struct Texture2D{CT <: Colorant} <: AbstractTexture
+mutable struct Texture2D <: AbstractTexture
     path::String
     size::Tuple{UInt32, UInt32}
     id::UInt32
     internal_format::UInt32
     data_format::UInt32
+    colortype::DataType
 end
 
 function Texture2D(path::String, slot = 0)
@@ -37,7 +38,7 @@ end
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _size..., data_format, GL_UNSIGNED_BYTE, _img)
     #glTexImage2D(GL_TEXTURE_2D, 0, type, _size..., 0, type, GL_UNSIGNED_BYTE, _img)
 
-    finalizer(destroy, Texture2D{eltype(img)}(path, _size, id, internal_format, data_format))
+    finalizer(destroy, Texture2D(path, _size, id, internal_format, data_format, eltype(img)))
 end
 
 width(t::Texture2D) = t.size[1]
@@ -63,8 +64,9 @@ destroy(t::Texture2D) = glDeleteTextures(1, Ref(t.id))
 img2bytes(img::Matrix{RGBA}) = [UInt8(x.i) for c in img for x in (c.r, c.g, c.b, c.alpha)]
 img2bytes(img::Matrix{RGB}) = [UInt8(x.i) for c in img for x in (c.r, c.g, c.b)]
 
-@HZ_profile function upload(t::Texture2D{CT}, img::Matrix{CT}) where {CT <: Colorant}
+@HZ_profile function upload(t::Texture2D, img::Matrix{CT}) where {CT <: Colorant}
     t.size != size(img) && throw(DimensionMismatch("Image and Texture have different size!"))
+    t.colortype != CT && throw(ErrorException("Expected colortype $(t.colortype) but got $CT."))
     bind(t)
     glTexSubImage2D(
         GL_TEXTURE_2D, 0,
