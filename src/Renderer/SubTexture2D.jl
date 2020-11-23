@@ -33,6 +33,7 @@ end
 
 texture(t::SubTexture) = t.texture
 uv(t::SubTexture) = t.lrbt
+id(t::SubTexture) = t.texture.id
 
 
 

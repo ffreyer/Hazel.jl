@@ -77,3 +77,6 @@ img2bytes(img::Matrix{RGB}) = [UInt8(x.i) for c in img for x in (c.r, c.g, c.b)]
 end
 
 Base.:(==)(t1::Texture2D, t2::Texture2D) = t1.id == t2.id
+# For compatability with SubTextures
+uv(::Texture2D) = LRBT{Float32}(0, 1, 0, 1)
+id(t::Texture2D) = t.id

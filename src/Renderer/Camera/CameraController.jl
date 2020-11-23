@@ -2,7 +2,7 @@ abstract type AbstractCameraController end
 
 mutable struct OrthographicCameraController{T} <: AbstractCameraController
     aspect_ratio::T
-    camera::OrthographicCamera{T}
+    camera::OrthographicCamera
 
     zoom::T
     rotation::T

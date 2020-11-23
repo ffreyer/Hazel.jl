@@ -17,10 +17,6 @@ end
         MutableLayerStack()
     )
 
-    # TODO: Only one?
-    # Renderer.init!()
-    Renderer2D.init!()
-
     @info (glGetString(GL_VENDOR) |> unsafe_string)
     @info (glGetString(GL_RENDERER) |> unsafe_string)
     @info (glGetString(GL_VERSION) |> unsafe_string)
@@ -128,7 +124,7 @@ function handle!(app::AbstractApplication, ::WindowRestoredEvent)
 end
 function handle!(app::AbstractApplication, event::WindowResizeEvent)
     resize!(app, event.width, event.height)
-    true
+    false
 end
 function handle!(app::AbstractApplication, ::WindowMinimizedEvent)
     minimize!(app)
@@ -165,7 +161,8 @@ end
 const __max_screen_size = 16384
 @HZ_profile function resize!(app::AbstractApplication, width::Integer, height::Integer)
     if (1 ≤ width ≤ __max_screen_size) && (1 ≤ height ≤ __max_screen_size)
-        Renderer.resize!(width, height)
+        # Renderer.resize!(width, height)
+        RenderCommand.viewport(0, 0, width, height)
     else
         @warn "Attempt to resize to ($width, $height) failed."
     end

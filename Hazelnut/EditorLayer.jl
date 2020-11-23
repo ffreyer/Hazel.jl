@@ -15,7 +15,7 @@ struct EditorLayer{AT <: AbstractApplication} <: AbstractLayer
     color::Vector{Float32}
     scene::Scene
     scene2::Scene
-    spritesheet::RegularSpriteSheet{Texture2D{RGBA{N0f8}}, Float32}
+    spritesheet::RegularSpriteSheet
 
     viewport_focused::Ref{Bool}
 end
@@ -49,18 +49,16 @@ function EditorLayer()
     WWWW WWWW WWWW WWWW WWWW WWWW""", 24, 14, spritesheet)
 
     for i in 1:size(tilemap, 1), j in 1:size(tilemap, 2)
-        push!(scene2, Renderer2D.Quad(
-            Vec3f0(i-12, j-7, 0), Vec2f0(1), texture = tilemap[i, j]
-        ))
+        Hazel.addQuad!(scene2, position = Vec3f0(i-12, j-7, 0), texture = tilemap[i, j])
     end
-
+    Hazel.addBatchRenderingStage!(scene2)
 
     EditorLayer(
         Ref{BasicApplication}(),
         camera_controller,
         Ref{Framebuffer}(),
         Float32[0.2, 0.4, 0.8, 1.0],
-        scene2, scene2,
+        Scene(camera_controller.camera), scene2,
         spritesheet,
         Ref(false)
     )
@@ -95,17 +93,11 @@ end
 
 
 function Hazel.attach(l::EditorLayer, app::AbstractApplication)
-    @info "Attaching $(typeof(app))"
+    @info "Attaching EditorLayer to $(typeof(app))"
     l.app[] = app
     l.framebuffer[] = Hazel.Framebuffer(size(Hazel.window(app))...)
     id = l.framebuffer[].t_id
     Hazel.CImGui.OpenGLBackend.g_ImageTexture[Int(id)] = id
-
-    #=
-    square = Entity(scene)
-    push!(square, :tranform, TransformComponent())
-    push!(square, :sprite, SpriteRendererComponent(Vec4f0(0,1,0,1)))
-    =#
 end
 
 
@@ -122,8 +114,9 @@ end
 
     @HZ_profile "Render Layer" begin
         # maybe API change: push!(Renderer, scene)
-        Renderer2D.submit(l.scene)
-        Renderer2D.submit(l.scene2)
+        # Renderer2D.submit(l.scene)
+        # Renderer2D.submit(l.scene2)
+        Hazel.render(l.scene2)
     end
     Hazel.unbind(l.framebuffer[])
 

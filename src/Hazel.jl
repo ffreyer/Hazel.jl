@@ -17,6 +17,10 @@ using FileIO, ImageIO, FixedPointNumbers, ImageMagick # loading png files
 using TimerOutputs
 export print_timer, reset_timer!
 
+using Overseer
+import Overseer: update, requested_components
+
+
 # projection math, LRBT, transformations
 include("util/main.jl")
 export LRBT, moveto!, moveby!, rotateto!, rotateby!, scaleto!, scaleby!
@@ -24,9 +28,6 @@ export LRBT, moveto!, moveby!, rotateto!, rotateby!, scaleto!, scaleby!
 # currently just benchmarking/TimerOutputs extras
 include("debug/Instrumentation.jl")
 export @HZ_profile
-
-# My simpel and porbably bad Entity component system :^)
-include("EntityComponentSystem/EntityComponentSystem.jl")
 
 
 # TODO
@@ -89,9 +90,8 @@ export AbstractCamera, OrthographicCamera, OrthographicCameraController
 export moveto!, moveby!, position, rotateto!, rotateby!, rotation, zoom, zoom!
 export RegularSpriteSheet
 # export projection, view, projection_view # Should these be exported?
-export Renderer, submit
-export Renderer2D
-export RenderObject, Scene, camera
+export Scene, camera, render
+export addQuad!, addBatchRenderingStage!
 
 
 
