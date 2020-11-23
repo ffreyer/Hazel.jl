@@ -12,8 +12,6 @@ function scalematrix(s::Vec{3, T}) where T
     )
 end
 
-
-
 translationmatrix_x(x::T) where {T} = translationmatrix(Vec{3, T}(x, 0, 0))
 translationmatrix_y(y::T) where {T} = translationmatrix(Vec{3, T}(0, y, 0))
 translationmatrix_z(z::T) where {T} = translationmatrix(Vec{3, T}(0, 0, z))
@@ -27,8 +25,6 @@ function translationmatrix(t::Vec{3, T}) where T
         t[1],t[2],t[3],T1,
     )
 end
-
-
 
 rotate(angle, axis::Vec{3}) = rotationmatrix4(qrotation(convert(Array, axis), angle))
 rotate(::Type{T}, angle::Number, axis::Vec{3}) where {T} = rotate(T(angle), convert(Vec{3, T}, axis))
@@ -60,12 +56,6 @@ function rotationmatrix_z(angle::Number)
         T0, T0, T0, T1
     )
 end
-
-
-################################################################################
-
-# projections
-
 """
     Create view frustum
 
@@ -123,11 +113,11 @@ end
 projection ratio in terms of the rectangular view size `rect` rather
 than the aspect ratio.
 """
-function perspectiveprojection(wh::SimpleRectangle, fov::T, near::T, far::T) where T
+function perspectiveprojection(wh::Rect2D, fov::T, near::T, far::T) where T
     perspectiveprojection(fov, T(wh.w/wh.h), near, far)
 end
 function perspectiveprojection(
-        ::Type{T}, wh::SimpleRectangle, fov::Number, near::Number, far::Number
+        ::Type{T}, wh::Rect2D, fov::Number, near::Number, far::Number
     ) where T
     perspectiveprojection(T(fov), T(wh.w/wh.h), T(near), T(far))
 end
@@ -155,11 +145,11 @@ end
 function lookat(::Type{T}, eyePos::Vec{3}, lookAt::Vec{3}, up::Vec{3}) where T
     lookat(Vec{3,T}(eyePos), Vec{3,T}(lookAt), Vec{3,T}(up))
 end
-function orthographicprojection(wh::SimpleRectangle, near::T, far::T) where T
+function orthographicprojection(wh::Rect2D, near::T, far::T) where T
     orthographicprojection(zero(T), T(wh.w), zero(T), T(wh.h), near, far)
 end
 function orthographicprojection(
-        ::Type{T}, wh::SimpleRectangle, near::Number, far::Number
+        ::Type{T}, wh::Rect2D, near::Number, far::Number
     ) where T
     orthographicprojection(wh, T(near), T(far))
 end
@@ -190,29 +180,27 @@ function orthographicprojection(::Type{T},
     )
 end
 
+# mutable struct Pivot{T}
+#     origin      ::Vec{3, T}
+#     xaxis       ::Vec{3, T}
+#     yaxis       ::Vec{3, T}
+#     zaxis       ::Vec{3, T}
+#     rotation    ::Quaternion
+#     translation ::Vec{3, T}
+#     scale       ::Vec{3, T}
+# end
+
+# GeometryBasics.origin(p::Pivot) = p.origin
+
+# rotationmatrix4(q::Quaternion{T}) where {T} = Mat4{T}(q)
 
 
-mutable struct Pivot{T}
-    origin      ::Vec{3, T}
-    xaxis       ::Vec{3, T}
-    yaxis       ::Vec{3, T}
-    zaxis       ::Vec{3, T}
-    rotation    ::Quaternion
-    translation ::Vec{3, T}
-    scale       ::Vec{3, T}
-end
-
-GeometryTypes.origin(p::Pivot) = p.origin
-
-rotationmatrix4(q::Quaternion{T}) where {T} = Mat4{T}(q)
-
-
-function transformationmatrix(p::Pivot)
-    translationmatrix(p.origin) * #go to origin
-    rotationmatrix4(p.rotation) * #apply rotation
-    translationmatrix(-p.origin)* # go back to origin
-    translationmatrix(p.translation) #apply translation
-end
+# function transformationmatrix(p::Pivot)
+#     translationmatrix(p.origin) * #go to origin
+#     rotationmatrix4(p.rotation) * #apply rotation
+#     translationmatrix(-p.origin)* # go back to origin
+#     translationmatrix(p.translation) #apply translation
+# end
 
 function transformationmatrix(translation, scale)
     T = eltype(translation)
@@ -225,18 +213,18 @@ function transformationmatrix(translation, scale)
     )
 end
 
-function transformationmatrix(translation, scale, rotation::Quaternion)
-    trans_scale = transformationmatrix(translation, scale)
-    rotation = Mat4f0(rotation)
-    trans_scale*rotation
-end
+# function transformationmatrix(translation, scale, rotation::Quaternion)
+#     trans_scale = transformationmatrix(translation, scale)
+#     rotation = Mat4f0(rotation)
+#     trans_scale*rotation
+# end
 
-function transformationmatrix(
-        translation::Vec{3}, scale::Vec{3}, rotation::Quaternion,
-        align, flip::NTuple{3, Bool}, boundingbox::Nothing
-    )
-    return transformationmatrix(translation, scale, rotation)
-end
+# function transformationmatrix(
+#         translation::Vec{3}, scale::Vec{3}, rotation::Quaternion,
+#         align, flip::NTuple{3, Bool}, boundingbox::Nothing
+#     )
+#     return transformationmatrix(translation, scale, rotation)
+# end
 
 # function transformationmatrix(
 #         translation::Vec{3}, scale::Vec{3}, rotation::Quaternion,
@@ -266,24 +254,35 @@ function transformationmatrix(
     transformationmatrix(translation, scale, q)
 end
 
-#Calculate rotation between two vectors
-function rotation(u::Vec{3, T}, v::Vec{3, T}) where T
-    # It is important that the inputs are of equal length when
-    # calculating the half-way vector.
-    u, v = normalize(u), normalize(v)
-    # Unfortunately, we have to check for when u == -v, as u + v
-    # in this case will be (0, 0, 0), which cannot be normalized.
-    if (u == -v)
-        # 180 degree rotation around any orthogonal vector
-        other = (abs(dot(u, Vec{3, T}(1,0,0))) < 1.0) ? Vec{3, T}(1,0,0) : Vec{3, T}(0,1,0)
-        return qrotation(normalize(cross(u, other)), T(180))
-    end
-    half = normalize(u+v)
-    return Quaternion(cross(u, half)..., dot(u, half))
-end
+# #Calculate rotation between two vectors
+# function rotation(u::Vec{3, T}, v::Vec{3, T}) where T
+#     # It is important that the inputs are of equal length when
+#     # calculating the half-way vector.
+#     u, v = normalize(u), normalize(v)
+#     # Unfortunately, we have to check for when u == -v, as u + v
+#     # in this case will be (0, 0, 0), which cannot be normalized.
+#     if (u == -v)
+#         # 180 degree rotation around any orthogonal vector
+#         other = (abs(dot(u, Vec{3, T}(1,0,0))) < 1.0) ? Vec{3, T}(1,0,0) : Vec{3, T}(0,1,0)
+#         return qrotation(normalize(cross(u, other)), T(180))
+#     end
+#     half = normalize(u+v)
+#     return Quaternion(cross(u, half)..., dot(u, half))
+# end
 
 
 
+# function to_world(scene::Scene, point::T) where T <: StaticVector
+#     cam = scene.camera
+#     x = to_world(
+#         point,
+#         inv(transformationmatrix(scene)[]) *
+#         inv(cam.view[]) *
+#         inv(cam.projection[]),
+#         T(widths(pixelarea(scene)[]))
+#     )
+#     Point2f0(x[1], x[2])
+# end
 
 w_component(x::Point) = 1.0
 w_component(x::Vec) = 0.0
@@ -312,6 +311,16 @@ function to_world(
         to_world(zeros(Point{N, T}), prj_view_inv, cam_res)
 end
 
+# function project(scene::Scene,point::T) where T<:StaticVector
+#     cam = scene.camera
+#     project(
+#         cam.projection[] * 
+#         cam.view[] * 
+#         transformationmatrix(scene)[],
+#         Vec2(scene.resolution[]), point
+#     )
+# end
+
 # function project(matrix::Mat4f0, p::T, dim4 = 1.0) where T <: VecTypes
 #     p = to_ndim(Vec4f0, to_ndim(Vec3f0, p, 0.0), dim4)
 #     p = matrix * p
@@ -319,10 +328,10 @@ end
 # end
 
 
-function project(proj_view::Mat4f0, resolution::Vec2, point::Point)
-    p4d = to_ndim(Vec4f0, to_ndim(Vec3f0, point, 0f0), 1f0)
-    clip = proj_view * p4d
-    p = (clip / clip[4])[Vec(1, 2)]
-    p = Vec2f0(p[1], p[2])
-    ((((p + 1f0) / 2f0) .* (resolution - 1f0)) + 1f0)
-end
+# function project(proj_view::Mat4f0, resolution::Vec2, point::Point)
+#     p4d = to_ndim(Vec4f0, to_ndim(Vec3f0, point, 0f0), 1f0)
+#     clip = proj_view * p4d
+#     p = (clip / clip[4])[Vec(1, 2)]
+#     p = Vec2f0(p[1], p[2])
+#     ((((p + 1f0) / 2f0) .* (resolution - 1f0)) + 1f0)
+# end
