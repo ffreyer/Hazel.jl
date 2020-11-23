@@ -13,8 +13,8 @@ struct EditorLayer{AT <: AbstractApplication} <: AbstractLayer
     framebuffer::Ref{Framebuffer}
 
     color::Vector{Float32}
+    we::WrappedEntity
     scene::Scene
-    scene2::Scene
     spritesheet::RegularSpriteSheet
 
     viewport_focused::Ref{Bool}
@@ -30,7 +30,7 @@ function EditorLayer()
         Hazel.assetpath, "textures/kenneyrpgpack/Spritesheet/RPGpack_sheet_2X.png"
     ), Nx=20, Ny=13)
 
-    scene2 = Scene(camera_controller.camera)
+    scene = Scene(camera_controller.camera)
     
     tilemap = string2map("""
     WWWW WWWW WWWW WWWW WWWW WWWW
@@ -49,16 +49,17 @@ function EditorLayer()
     WWWW WWWW WWWW WWWW WWWW WWWW""", 24, 14, spritesheet)
 
     for i in 1:size(tilemap, 1), j in 1:size(tilemap, 2)
-        Hazel.addQuad!(scene2, position = Vec3f0(i-12, j-7, 0), texture = tilemap[i, j])
+        addQuad!(scene, position = Vec3f0(i-12, j-7, 0), texture = tilemap[i, j])
     end
-    Hazel.addBatchRenderingStage!(scene2)
+    addBatchRenderingStage!(scene)
+    we = addQuad!(scene, position = Vec3f0(0, 0, 1), color=Vec4f0(1, 0.5, 0.5, 1))
 
     EditorLayer(
         Ref{BasicApplication}(),
         camera_controller,
         Ref{Framebuffer}(),
         Float32[0.2, 0.4, 0.8, 1.0],
-        Scene(camera_controller.camera), scene2,
+        we, scene,
         spritesheet,
         Ref(false)
     )
@@ -116,7 +117,8 @@ end
         # maybe API change: push!(Renderer, scene)
         # Renderer2D.submit(l.scene)
         # Renderer2D.submit(l.scene2)
-        Hazel.render(l.scene2)
+        # Hazel.render(l.scene)
+        render(l.scene)
     end
     Hazel.unbind(l.framebuffer[])
 
@@ -138,6 +140,12 @@ end
     CImGui.Image(Ptr{Cvoid}(Int(sl.framebuffer[].t_id)), window_size, (0, 1), (1, 0))
     CImGui.End()
     CImGui.PopStyleVar()
+
+    CImGui.Begin("Color Picker")
+    Hazel.CImGui.ColorEdit4("Square color", sl.color)
+    setcolor!(sl.we, Vec4f0(sl.color))
+    CImGui.End()
+
     nothing
 end
 

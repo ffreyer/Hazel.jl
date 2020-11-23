@@ -91,7 +91,7 @@ export moveto!, moveby!, position, rotateto!, rotateby!, rotation, zoom, zoom!
 export RegularSpriteSheet
 # export projection, view, projection_view # Should these be exported?
 export Scene, camera, render
-export addQuad!, addBatchRenderingStage!
+export addQuad!, addBatchRenderingStage!, WrappedEntity, setcolor!
 
 
 

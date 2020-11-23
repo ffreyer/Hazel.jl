@@ -14,12 +14,18 @@ end
 ### (Quad) Components
 ################################################################################
 
+# Name
 # SimpleTexture
 # ColorComponent
 # Transform2D (semi-internal)
 # QuadVertices (internal)
 # IsVisible
 # TilingFactor
+
+@component struct NameComponent
+    name::String
+end
+NameComponent() = NameComponent("Unnamed Entity")
 
 @component struct SimpleTexture
     texture::Texture2D
@@ -96,25 +102,49 @@ TilingFactor() = TilingFactor(1f0)
 
 
 
+struct WrappedEntity
+    parent::Scene
+    entity::Entity
+end
+
 # This generates a Quad entity
 function addQuad!(
         scene::Scene, args...;
         position::Vec3f0=Vec3f0(0), size::Vec2f0=Vec2f0(1), rotation = 0f0,
         color::Vec4f0 = Vec4f0(1), texture = blank_texture(), 
-        tilingfactor::Float32 = 1f0, visible = true,
-        uv = uv(texture)
+        tilingfactor::Float32 = 1f0, visible::Bool = true,
+        uv::LRBT = uv(texture), name::String = "Unnamed Entity"
     )
     transform = Transform2D(position, rotation, size)
-    Entity(registry(scene),
+    e = Entity(registry(scene),
         transform, QuadVertices(transform, uv),
         ColorComponent(color),
         SimpleTexture(texture),
         TilingFactor(tilingfactor),
         IsVisible(visible),
+        NameComponent(name),
         args...
     )
+    WrappedEntity(scene, e)
 end
 
+moveto!(we::WrappedEntity, val) = moveto!(we.parent, we.entity, val)
+moveby!(we::WrappedEntity, val) = moveby!(we.parent, we.entity, val)
+scaleto!(we::WrappedEntity, val) = scaleto!(we.parent, we.entity, val)
+scaleby!(we::WrappedEntity, val) = scaleby!(we.parent, we.entity, val)
+rotateto!(we::WrappedEntity, val) = rotateto!(we.parent, we.entity, val)
+rotateby!(we::WrappedEntity, val) = rotateby!(we.parent, we.entity, val)
+setcolor!(we::WrappedEntity, val) = setcolor!(we.parent, we.entity, val)
+
+registry(we::WrappedEntity) = registry(we.parent)
+Base.push!(we::WrappedEntity, component) = registry(we)[we.entity] = component
+Base.haskey(we::WrappedEntity, key) = we.entity in registry(we)[key]
+Base.in(key, we::WrappedEntity) = we.entity in registry(we)[key]
+Base.getindex(we::WrappedEntity, key) = registry(we)[key][e]
+Base.setindex!(we::WrappedEntity, val, key) = registry(we)[key][e] = val
+Base.delete!(we::WrappedEntity) = delete!(registry(we), we.entity)
+Base.delete!(we::WrappedEntity, key) = pop!(registry(we)[key], we.entity)
+Base.pop!(we::WrappedEntity, key) = pop!(registry(we)[key], we.entity)
 
 
 ################################################################################
