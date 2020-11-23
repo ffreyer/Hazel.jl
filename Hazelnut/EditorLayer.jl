@@ -149,4 +149,10 @@ end
     false
 end
 
+function destroy(l::EditorLayer)
+    destroy(l.scene)
+    destroy(l.scene2)
+    destroy(l.framebuffer[])
+end
+
 Base.string(l::EditorLayer) = l.name

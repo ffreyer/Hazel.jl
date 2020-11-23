@@ -34,6 +34,8 @@ end
     glTexStorage2D(GL_TEXTURE_2D, 1, internal_format, _size...)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
 
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _size..., data_format, GL_UNSIGNED_BYTE, _img)
     #glTexImage2D(GL_TEXTURE_2D, 0, type, _size..., 0, type, GL_UNSIGNED_BYTE, _img)
