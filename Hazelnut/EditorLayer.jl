@@ -13,9 +13,14 @@ struct EditorLayer{AT <: AbstractApplication} <: AbstractLayer
     framebuffer::Ref{Framebuffer}
 
     color::Vector{Float32}
-    we::WrappedEntity
     scene::Scene
     spritesheet::RegularSpriteSheet
+
+    # Entities
+    quad::Quad
+    camera::Camera
+    camera2::Camera
+    active_primary_camera::Ref{Bool}
 
     viewport_focused::Ref{Bool}
 end
@@ -30,7 +35,7 @@ function EditorLayer()
         Hazel.assetpath, "textures/kenneyrpgpack/Spritesheet/RPGpack_sheet_2X.png"
     ), Nx=20, Ny=13)
 
-    scene = Scene(camera_controller.camera)
+    scene = Scene()
     
     tilemap = string2map("""
     WWWW WWWW WWWW WWWW WWWW WWWW
@@ -52,15 +57,25 @@ function EditorLayer()
         addQuad!(scene, position = Vec3f0(i-12, j-7, 0), texture = tilemap[i, j])
     end
     addBatchRenderingStage!(scene)
-    we = addQuad!(scene, position = Vec3f0(0, 0, 1), color=Vec4f0(1, 0.5, 0.5, 1))
+    quad = addQuad!(scene, position = Vec3f0(0, 0, 1), color=Vec4f0(1, 0.5, 0.5, 1))
+
+    camera = Camera(scene,
+        name = "Orthographic Camera",
+        projection = Hazel.orthographicprojection(-16f0, 16f0, -9f0, 9f0, -1f0, 1f0)
+    )
+    camera2 = Camera(scene,
+        name = "Clip Space Camera",
+        projection = Hazel.orthographicprojection(-1f0, 1f0, -1f0, 1f0, -1f0, 1f0)
+    )
+    activate!(camera)
 
     EditorLayer(
         Ref{BasicApplication}(),
         camera_controller,
         Ref{Framebuffer}(),
         Float32[0.2, 0.4, 0.8, 1.0],
-        we, scene,
-        spritesheet,
+        scene, spritesheet,
+        quad, camera, camera2, Ref{Bool}(true),
         Ref(false)
     )
 end
@@ -113,6 +128,8 @@ end
     # Clear framebuffer
     RenderCommand.clear()
 
+
+
     @HZ_profile "Render Layer" begin
         # maybe API change: push!(Renderer, scene)
         # Renderer2D.submit(l.scene)
@@ -142,8 +159,12 @@ end
     CImGui.PopStyleVar()
 
     CImGui.Begin("Color Picker")
-    Hazel.CImGui.ColorEdit4("Square color", sl.color)
-    setcolor!(sl.we, Vec4f0(sl.color))
+    CImGui.ColorEdit4("Square color", sl.color)
+    setcolor!(sl.quad, Vec4f0(sl.color))
+
+    # yuck
+    CImGui.Checkbox("Use orthographic camera", sl.active_primary_camera)
+    activate!(sl.active_primary_camera[] ? sl.camera : sl.camera2)
     CImGui.End()
 
     nothing

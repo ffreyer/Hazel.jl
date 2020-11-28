@@ -1,17 +1,15 @@
 abstract type AbstractScene end
 
-struct Scene{CT <: AbstractCamera} <: AbstractScene
-    camera::CT
+struct Scene <: AbstractScene
     registry::Ledger
 end
 
-@HZ_profile function Scene(camera::AbstractCamera)
+@HZ_profile function Scene()
     registry = Ledger()
-    Scene(camera, registry)
+    Scene(registry)
 end
 
 registry(scene::Scene) = scene.registry
-camera(scene::Scene) = scene.camera
 Base.delete!(scene::Scene, e::Entity) = delete!(scene.registry, e)
 
 # Overseer interface forwarding

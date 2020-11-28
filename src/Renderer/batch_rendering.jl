@@ -1,3 +1,8 @@
+"""
+    blank_texture()
+
+Returns a 1x1 white Texture2D.
+"""
 function blank_texture()
     # Is this a terrible idea?
     if !isdefined(Hazel, :BLANK_TEXTURE)
@@ -10,61 +15,14 @@ function blank_texture()
 end
 
 
-################################################################################
-### (Quad) Components
-################################################################################
+@doc """
+    QuadVertices()
+    QuadVertices(transform[, uv])
+    QuadVertices(positions::NTuple{4, VEc3f0}, uv::LRBT{Float32})
 
-# Name
-# SimpleTexture
-# ColorComponent
-# Transform2D (semi-internal)
-# QuadVertices (internal)
-# IsVisible
-# TilingFactor
-
-@component struct NameComponent
-    name::String
-end
-NameComponent() = NameComponent("Unnamed Entity")
-
-@component struct SimpleTexture
-    texture::Texture2D
-end
-SimpleTexture() = blank_texture()
-SimpleTexture(tex::SubTexture) = SimpleTexture(tex.texture)
-destroy(t::SimpleTexture) = destroy(t.texture)
-
-@component struct ColorComponent
-    color::Vec4f0
-end
-ColorComponent() = Vec4f0(1)
-
-@component struct Transform2D
-    position::Vec3f0
-    rotation::Float32
-    scale::Vec2f0
-    T::Mat4f0
-    has_changed::Bool
-end
-function Transform2D(position = Vec3f0(0), rotation = 0f0, scale = Vec2f0(1))
-    T = translationmatrix(position) * rotationmatrix_z(rotation) * 
-        scalematrix(Vec3f0(scale[1], scale[2], 1))
-    Transform2D(
-        _pad(Vec3f0, position, 0), 
-        Float32(rotation), 
-        _pad(Vec3f0, scale, 1.0), T, true
-    )
-end
-# convenience
-function Transform2D(
-        t::Transform2D; 
-        position=t.position, rotation=t.rotation, scale=t.scale, has_changed=true
-    )
-    T = translationmatrix(position) * rotationmatrix_z(rotation) * 
-        scalematrix(Vec3f0(scale[1], scale[2], 1))
-    Transform2D(position, rotation, scale, T, has_changed)
-end
-
+Internal representation of a Quad. This is used to avoid re-computing positions
+of static Quads.
+""" QuadVertices
 @component struct QuadVertices
     # for efficiency - needs to derived on Transform2D update
     positions::NTuple{4, Vec3f0}
@@ -84,16 +42,6 @@ function QuadVertices(transform::Transform2D, uv = LRBT{Float32}(0, 1, 0, 1))
     ), uv)
 end
 
-@component struct IsVisible
-    val::Bool
-end
-IsVisible() = IsVisible(true)
-
-@component struct TilingFactor
-    tf::Float32
-end
-TilingFactor() = TilingFactor(1f0)
-
 
 
 ################################################################################
@@ -101,11 +49,12 @@ TilingFactor() = TilingFactor(1f0)
 ################################################################################
 
 
-
-struct WrappedEntity
-    parent::Scene
-    entity::Entity
+struct Quad
+    we::WrappedEntity
 end
+Quad(scene::Scene, e::Entity) = Quad(WrappedEntity(scene, e))
+@implement_entity_wrapper_methods Quad.we
+
 
 # This generates a Quad entity
 function addQuad!(
@@ -125,26 +74,9 @@ function addQuad!(
         NameComponent(name),
         args...
     )
-    WrappedEntity(scene, e)
+    Quad(scene, e)
 end
 
-moveto!(we::WrappedEntity, val) = moveto!(we.parent, we.entity, val)
-moveby!(we::WrappedEntity, val) = moveby!(we.parent, we.entity, val)
-scaleto!(we::WrappedEntity, val) = scaleto!(we.parent, we.entity, val)
-scaleby!(we::WrappedEntity, val) = scaleby!(we.parent, we.entity, val)
-rotateto!(we::WrappedEntity, val) = rotateto!(we.parent, we.entity, val)
-rotateby!(we::WrappedEntity, val) = rotateby!(we.parent, we.entity, val)
-setcolor!(we::WrappedEntity, val) = setcolor!(we.parent, we.entity, val)
-
-registry(we::WrappedEntity) = registry(we.parent)
-Base.push!(we::WrappedEntity, component) = registry(we)[we.entity] = component
-Base.haskey(we::WrappedEntity, key) = we.entity in registry(we)[key]
-Base.in(key, we::WrappedEntity) = we.entity in registry(we)[key]
-Base.getindex(we::WrappedEntity, key) = registry(we)[key][e]
-Base.setindex!(we::WrappedEntity, val, key) = registry(we)[key][e] = val
-Base.delete!(we::WrappedEntity) = delete!(registry(we), we.entity)
-Base.delete!(we::WrappedEntity, key) = pop!(registry(we)[key], we.entity)
-Base.pop!(we::WrappedEntity, key) = pop!(registry(we)[key], we.entity)
 
 
 ################################################################################
@@ -171,8 +103,6 @@ end
 
 # This will take care of batching and rendering quads
 struct BatchRenderer <: System
-    camera::OrthographicCamera
-
     vertex_buffer::Vector{QuadVertex}
     texture_buffer::Vector{Texture2D}
 
@@ -185,7 +115,7 @@ struct BatchRenderer <: System
     max_texture_slots::Int
 end
 
-function BatchRenderer(camera::OrthographicCamera;
+function BatchRenderer(;
         max_quads = 10_000,
         max_quad_vertices = 4max_quads,
         max_quad_indices = 6max_quads,
@@ -215,7 +145,6 @@ function BatchRenderer(camera::OrthographicCamera;
     end
 
     BatchRenderer(
-        camera,
         Vector{QuadVertex}(undef, max_quad_vertices), texture_buffer,
         vertex_array, shader,
         max_quads, max_quad_vertices, max_quad_indices, max_texture_slots,
@@ -227,6 +156,19 @@ requested_components(::BatchRenderer) = (
 )
 
 function update(br::BatchRenderer, reg::AbstractLedger)
+    # Find active camera
+    cameras = reg[CameraComponent]
+    projection_view = zero(Mat4f0)
+    for e in @entities_in(cameras) # I think this just works?
+        if cameras[e].active
+            projection_view = cameras[e].projection_view
+            break
+        end
+    end
+    projection_view == zero(Mat4f0) && return
+
+
+    # Render
     textures        = reg[SimpleTexture]
     colors          = reg[ColorComponent]
     quads           = reg[QuadVertices]
@@ -250,7 +192,7 @@ function update(br::BatchRenderer, reg::AbstractLedger)
                 bind(tb[i], i)
             end
             # TODO uniforms (if there were any...)
-            upload!(br.shader, u_projection_view = projection_view(br.camera))
+            upload!(br.shader, u_projection_view = projection_view)
             RenderCommand.draw_indexed(br.va, br.max_quad_indices)
         end
 
@@ -286,7 +228,7 @@ function update(br::BatchRenderer, reg::AbstractLedger)
     for i in 1:tidx
         bind(tb[i], i)
     end
-    upload!(br.shader, u_projection_view = projection_view(br.camera))
+    upload!(br.shader, u_projection_view = projection_view)
     RenderCommand.draw_indexed(br.va, 6vidx-6)
 
     nothing
@@ -325,7 +267,7 @@ end
 function addBatchRenderingStage!(scene::Scene; kwargs...)
     stage = Stage(
         :BatchRenderingStage, 
-        [ApplyTransform(), BatchRenderer(scene.camera; kwargs...)]
+        [ApplyTransform(), BatchRenderer(; kwargs...)]
     )
     push!(scene, stage)
 end
@@ -338,63 +280,60 @@ end
 
 
 
-function _recalculate!(scene::Scene, e::Entity)
-    T = scene[Transform2D][e]
-    q = scene[QuadVertices][e]
-    scene[QuadVertices][e] = QuadVertices(T, q.uv)
+function _recalculate!(quad::Quad)
+    quad[QuadVertices] = QuadVertices(quad[Transform2D], quad[QuadVertices].uv)
     nothing
 end
 
 
-function moveto!(s::Scene, e::Entity, p::Vec3f0)
-    s[Transform2D][e] = Transform2D(s[Transform2D][e], position = p, has_changed=false)
-    _recalculate!(s, e)
+function moveto!(quad::Quad, p::Vec3f0)
+    quad[Transform2D] = Transform2D(quad[Transform2D], position = p, has_changed=false)
+    _recalculate!(quad)
 end
-moveto!(s::Scene, e::Entity, p::Vec2f0) = moveto!(s, e, Vec3f0(p..., q.position[3]))
-function moveby!(s::Scene, e::Entity, v::Vec3f0)
-    T = s[Transform2D][e]
-    s[Transform2D][e] = Transform2D(T, position = T.position .+ v, has_changed=false)
-    _recalculate!(s, e)
+moveto!(quad::Quad, p::Vec2f0) = moveto!(quad, Vec3f0(p..., quad[Transform2D].position[3]))
+function moveby!(quad::Quad, v::Vec3f0)
+    T = quad[Transform2D]
+    quad[Transform2D] = Transform2D(T, position = T.position .+ v, has_changed=false)
+    _recalculate!(quad)
 end
-moveby!(s::Scene, e::Entity, v::Vec2f0) = moveto!(s, e, Vec3f0(v..., 0))
+moveby!(quad::Quad, v::Vec2f0) = moveto!(quad, Vec3f0(v..., 0))
 
 
-function rotateto!(s::Scene, e::Entity, θ::Float32)
-    T = s[Transform2D][e]
-    s[Transform2D][e] = Transform2D(T, rotation = θ, has_changed=false)
-    _recalculate!(s, e)
+function rotateto!(quad::Quad, θ::Float32)
+    quad[Transform2D] = Transform2D(quad[Transform2D], rotation = θ, has_changed=false)
+    _recalculate!(quad)
 end
-function rotateby!(s::Scene, e::Entity, θ::Float32)
-    T = s[Transform2D][e]
-    s[Transform2D][e] = Transform2D(T, rotation = T.rotation+θ, has_changed=false)
-    _recalculate!(s, e)
+function rotateby!(quad::Quad, θ::Float32)
+    T = quad[Transform2D]
+    quad[Transform2D] = Transform2D(T, rotation = T.rotation+θ, has_changed=false)
+    _recalculate!(quad)
 end
 
 
-function scaleto!(scene::Scene, e::Entity, s::Vec3f0)
-    T = scene[Transform2D][e]
-    scene[Transform2D][e] = Transform2D(T, scale = s, has_changed=false)
-    _recalculate!(scene, e)
+function scaleto!(quad::Quad, s::Vec3f0)
+    quad[Transform2D] = Transform2D(quad[Transform2D], scale = s, has_changed=false)
+    _recalculate!(quad)
 end
-scaleto!(scene::Scene, e::Entity, s::Real) = scaleto!(scene, e, Float32(s))
-scaleto!(scene::Scene, e::Entity, s::Float32) = scaleto!(scene, e, Vec3f0(s, s, 1.0))
-scaleto!(scene::Scene, e::Entity, s::Vec2f0) = scaleto!(scene, e, Vec3f0(s..., 1.0))
+scaleto!(quad::Quad, s::Real) = scaleto!(quad, Float32(s))
+scaleto!(quad::Quad, s::Float32) = scaleto!(quad, Vec3f0(s, s, 1.0))
+scaleto!(quad::Quad, s::Vec2f0) = scaleto!(quad, Vec3f0(s..., 1.0))
 
 
-function scaleby!(scene::Scene, e::Entity, s::Vec3f0)
-    T = scene[Transform2D][e]
-    scene[Transform2D][e] = Transform2D(T, scale = T.scale .* s, has_changed=false)
-    _recalculate!(scene, e)
+function scaleby!(quad::Quad, s::Vec3f0)
+    T = quad[Transform2D]
+    quad[Transform2D] = Transform2D(T, scale = T.scale .* s, has_changed=false)
+    _recalculate!(quad)
 end 
-scaleby!(scene::Scene, e::Entity, s::Real) = scaleby!(scene, e, Float32(s))
-scaleby!(scene::Scene, e::Entity, s::Float32) = scaleby!(scene, e, Vec2f0(s))
-scaleby!(scene::Scene, e::Entity, s::Vec2f0) = scaleby!(scene, e, Vec3f0(s..., 1.0))
+scaleby!(quad::Quad, s::Real) = scaleby!(quad, Float32(s))
+scaleby!(quad::Quad, s::Float32) = scaleby!(quad, Vec2f0(s))
+scaleby!(quad::Quad, s::Vec2f0) = scaleby!(quad, Vec3f0(s..., 1.0))
 
 
-function setcolor!(scene::Scene, e::Entity, color::Vec4f0)
-    scene[ColorComponent][e] = ColorComponent(color)
+function setcolor!(quad::Quad, color::Vec4f0)
+    quad[ColorComponent] = ColorComponent(color)
 end
 
+# Why am I not using these?
 _pad(::Type{Vec3f0}, v::Float32, p) = Vec3f0(v, p, p)
 _pad(::Type{Vec3f0}, v::Vec2f0, p) = Vec3f0(v[1], v[2], p)
 _pad(::Type{Vec3f0}, v::Vec3f0, p) = v
