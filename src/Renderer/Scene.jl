@@ -39,3 +39,13 @@ end
 destroy(_) = nothing
 
 Base.push!(scene::Scene, stage::Stage) = push!(scene.registry, stage)
+
+
+
+function resize_viewport!(scene::Scene, w, h)
+    cameras = scene[CameraComponent]
+    for e in @entities_in(cameras)
+        resize_viewport!(cameras[e], w, h)
+    end
+    nothing
+end

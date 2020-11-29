@@ -51,23 +51,20 @@ function EditorLayer()
     WWWW GGGG GGGG GGGG GGGG WWWW
     WWWW WGGG GGGG GGGG GGGG WWWW
     WWWW WWWG GWWW WWWW GGGW WWWW
-    WWWW WWWW WWWW WWWW WWWW WWWW""", 24, 14, spritesheet)
+    WWWW WWWW WWWW WWWW WWWW WWWW""", 24, 14, spritesheet)    
+
+    # tilemap = string2map("WWWW", 4, 1, spritesheet)
 
     for i in 1:size(tilemap, 1), j in 1:size(tilemap, 2)
         addQuad!(scene, position = Vec3f0(i-12, j-7, 0), texture = tilemap[i, j])
     end
+    quad = addQuad!(scene, position = Vec3f0(0, 0, 0.1), color=Vec4f0(1, 0.5, 0.5, 1))
     addBatchRenderingStage!(scene)
-    quad = addQuad!(scene, position = Vec3f0(0, 0, 1), color=Vec4f0(1, 0.5, 0.5, 1))
 
-    camera = Camera(scene,
-        name = "Orthographic Camera",
-        projection = Hazel.orthographicprojection(-16f0, 16f0, -9f0, 9f0, -1f0, 1f0)
-    )
-    camera2 = Camera(scene,
-        name = "Clip Space Camera",
-        projection = Hazel.orthographicprojection(-1f0, 1f0, -1f0, 1f0, -1f0, 1f0)
-    )
+    camera = Camera(scene, name = "Orthographic Camera")
+    camera2 = Camera(scene, name = "Clip Space Camera", ortho_size = 2f0)
     activate!(camera)
+    Hazel.glDisable(Hazel.GL_BLEND)
 
     EditorLayer(
         Ref{BasicApplication}(),
@@ -120,21 +117,16 @@ end
 @HZ_profile function Hazel.update!(l::EditorLayer, dt)
     app = l.app[]
 
-    @HZ_profile "Update camera" update!(l.camera_controller, app, dt)
+    # @HZ_profile "Update camera" update!(l.camera_controller, app, dt)
     
     # Clear window
     RenderCommand.clear()
+
     Hazel.bind(l.framebuffer[])
     # Clear framebuffer
     RenderCommand.clear()
 
-
-
     @HZ_profile "Render Layer" begin
-        # maybe API change: push!(Renderer, scene)
-        # Renderer2D.submit(l.scene)
-        # Renderer2D.submit(l.scene2)
-        # Hazel.render(l.scene)
         render(l.scene)
     end
     Hazel.unbind(l.framebuffer[])
@@ -152,6 +144,7 @@ end
         w = trunc(UInt32, window_size.x); h = trunc(UInt32, window_size.y)
         resize!(sl.framebuffer[], w, h)
         resize!(sl.camera_controller, w, h)
+        Hazel.resize_viewport!(sl.scene, w, h)
         update!(sl, 0.0)
     end
     CImGui.Image(Ptr{Cvoid}(Int(sl.framebuffer[].t_id)), window_size, (0, 1), (1, 0))
@@ -162,7 +155,6 @@ end
     CImGui.ColorEdit4("Square color", sl.color)
     setcolor!(sl.quad, Vec4f0(sl.color))
 
-    # yuck
     CImGui.Checkbox("Use orthographic camera", sl.active_primary_camera)
     activate!(sl.active_primary_camera[] ? sl.camera : sl.camera2)
     CImGui.End()
@@ -180,7 +172,6 @@ end
 
 function destroy(l::EditorLayer)
     destroy(l.scene)
-    destroy(l.scene2)
     destroy(l.framebuffer[])
 end
 

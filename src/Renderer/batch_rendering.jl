@@ -18,7 +18,7 @@ end
 @doc """
     QuadVertices()
     QuadVertices(transform[, uv])
-    QuadVertices(positions::NTuple{4, VEc3f0}, uv::LRBT{Float32})
+    QuadVertices(positions::NTuple{4, Vec3f0}, uv::LRBT{Float32})
 
 Internal representation of a Quad. This is used to avoid re-computing positions
 of static Quads.
@@ -53,7 +53,8 @@ struct Quad
     we::WrappedEntity
 end
 Quad(scene::Scene, e::Entity) = Quad(WrappedEntity(scene, e))
-@implement_entity_wrapper_methods Quad.we
+# @implement_entity_wrapper_methods Quad.we
+eval(implement_entity_wrapper_methods(Quad, :we))
 
 
 # This generates a Quad entity
@@ -168,6 +169,7 @@ function update(br::BatchRenderer, reg::AbstractLedger)
     projection_view == zero(Mat4f0) && return
 
 
+
     # Render
     textures        = reg[SimpleTexture]
     colors          = reg[ColorComponent]
@@ -194,6 +196,8 @@ function update(br::BatchRenderer, reg::AbstractLedger)
             # TODO uniforms (if there were any...)
             upload!(br.shader, u_projection_view = projection_view)
             RenderCommand.draw_indexed(br.va, br.max_quad_indices)
+            vidx = 1
+            tidx = 0
         end
 
         # Maybe add texture, get texture index

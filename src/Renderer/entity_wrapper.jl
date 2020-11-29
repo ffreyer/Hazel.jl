@@ -18,6 +18,7 @@ function WrappedEntity(scene::Scene, components...)
 end
 
 registry(we::WrappedEntity) = registry(we.parent)
+entity(we::WrappedEntity) = we.entity
 Base.push!(we::WrappedEntity, component) = registry(we)[we.entity] = component
 Base.haskey(we::WrappedEntity, key) = we.entity in registry(we)[key]
 Base.in(key, we::WrappedEntity) = we.entity in registry(we)[key]
@@ -28,16 +29,14 @@ Base.delete!(we::WrappedEntity, key) = pop!(registry(we)[key], we.entity)
 Base.pop!(we::WrappedEntity, key) = pop!(registry(we)[key], we.entity)
 
 
+# """
+#     @implement_entity_wrapper_methods Type.field
 
-"""
-    @implement_entity_wrapper_methods Type.field
-
-Implements WrappedEntity methods for the given `Type` with `Type.field` being a
-WrappedEntity.
-"""
-macro implement_entity_wrapper_methods(input::Expr)
-    T = input.args[1]
-    field = input.args[2].value
+# Implements WrappedEntity methods for the given `Type` with `Type.field` being a
+# WrappedEntity.
+# """
+# macro implement_entity_wrapper_methods(input::Expr)
+function implement_entity_wrapper_methods(T, field)
     quote
         registry(x::$T) = registry(x.$field)
         Base.push!(x::$T, component) = push!(x.$field, component)
@@ -48,5 +47,6 @@ macro implement_entity_wrapper_methods(input::Expr)
         Base.delete!(x::$T) = delete!(x.$field)
         Base.delete!(x::$T, key) = delete!!(x.$field, key)
         Base.pop!(x::$T, key) = pop!(x.$field, key)
+        entity(x::$T) = entity(x.$field)
     end
 end

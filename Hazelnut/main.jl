@@ -1,4 +1,4 @@
-using Hazel
+using Revise, Hazel
 
 include("EditorLayer.jl")
 
