@@ -2,11 +2,12 @@ abstract type AbstractScene end
 
 struct Scene <: AbstractScene
     registry::Ledger
+    blank_texture::Texture2D
 end
 
 @HZ_profile function Scene()
     registry = Ledger()
-    Scene(registry)
+    Scene(registry, Texture2D(fill(RGBA(1, 1, 1, 1), 1, 1)))
 end
 
 registry(scene::Scene) = scene.registry
@@ -23,18 +24,29 @@ Base.getindex(s::Scene, c::DataType) = s.registry[c]
     update(scene.registry)
 end
 
-function destroy(scene::Scene)
-    for component in scene.registry.components
-        for value in component
-            destroy(value)
-        end
-    end
-    for (_, stage) in scene.registry.stages
-        for system in stage
-            destroy(system)
-        end
-    end
+"""
+    blank_texture(scene)
+
+Returns a 1x1 white Texture2D.
+"""
+function blank_texture(scene::Scene)
+    scene.blank_texture
 end
+
+# This should all happen through finalizers I think
+# function destroy(scene::Scene)
+#     for component in scene.registry.components
+#         for value in component
+#             destroy(value)
+#         end
+#     end
+#     for (_, stage) in scene.registry.stages
+#         for system in stage
+#             destroy(system)
+#         end
+#     end
+#     destroy(scene.blank_texture)
+# end
 
 destroy(_) = nothing
 

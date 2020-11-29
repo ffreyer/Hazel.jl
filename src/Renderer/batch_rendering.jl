@@ -1,20 +1,3 @@
-"""
-    blank_texture()
-
-Returns a 1x1 white Texture2D.
-"""
-function blank_texture()
-    # Is this a terrible idea?
-    if !isdefined(Hazel, :BLANK_TEXTURE)
-        @eval Hazel begin
-            const BLANK_TEXTURE = Texture2D(fill(RGBA(1, 1, 1, 1), 1, 1))
-        end
-    else
-        return Hazel.BLANK_TEXTURE
-    end
-end
-
-
 @doc """
     QuadVertices()
     QuadVertices(transform[, uv])
@@ -61,7 +44,7 @@ eval(implement_entity_wrapper_methods(Quad, :we))
 function addQuad!(
         scene::Scene, args...;
         position::Vec3f0=Vec3f0(0), size::Vec2f0=Vec2f0(1), rotation = 0f0,
-        color::Vec4f0 = Vec4f0(1), texture = blank_texture(), 
+        color::Vec4f0 = Vec4f0(1), texture = blank_texture(scene), 
         tilingfactor::Float32 = 1f0, visible::Bool = true,
         uv::LRBT = uv(texture), name::String = "Unnamed Entity"
     )
@@ -141,9 +124,6 @@ function BatchRenderer(;
     Hazel.upload!(shader, "u_texture", Int32.(collect(0:max_texture_slots-1)))
 
     texture_buffer = Vector{Texture2D}(undef, max_texture_slots)
-    for i in eachindex(texture_buffer)
-        texture_buffer[i] = blank_texture()
-    end
 
     BatchRenderer(
         Vector{QuadVertex}(undef, max_quad_vertices), texture_buffer,
