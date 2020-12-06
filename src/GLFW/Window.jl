@@ -112,7 +112,7 @@ enable_vsync(window::Window) = GLFW.SwapInterval(1)
 disable_vsync(window::Window) = GLFW.SwapInterval(0)
 
 
-@HZ_profile function update!(window::Window, dt)
+@HZ_profile function update!(window::Window)
     GLFW.PollEvents()
     swap_buffers(window.context)
     nothing

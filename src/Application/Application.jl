@@ -41,18 +41,16 @@ end
 
 function renderloop(app::AbstractApplication)
     try
-        t = time()
+        ts = Timestep()
         while app.running
             @HZ_profile "renderloop" begin
-                new_t = time()
-                dt = new_t - t
-                t = new_t
+                ts = Timestep(ts)
 
                 @HZ_profile "Full Layer update!" if !app.minimized
                     # Render layers in order (bottom to top)
                     @HZ_profile "Normal Layer update!" begin
                         for layer in app.layerstack
-                            update!(layer, dt)
+                            update!(app, layer, ts)
                         end
                     end
 
@@ -64,7 +62,7 @@ function renderloop(app::AbstractApplication)
                             if overlay isa ImGuiLayer
                                 Begin(overlay)
                                 for layer in app.layerstack
-                                    update!(overlay, layer, dt)
+                                    update!(app, overlay, layer, ts)
                                 end
                                 End(overlay)
                             end
@@ -73,7 +71,7 @@ function renderloop(app::AbstractApplication)
                 end
 
                 # This also polls events
-                update!(app.window, dt)
+                update!(app.window)
 
                 yield()
             end

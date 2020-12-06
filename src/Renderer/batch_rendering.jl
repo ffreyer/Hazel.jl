@@ -32,12 +32,10 @@ end
 ################################################################################
 
 
-struct Quad
-    we::WrappedEntity
+struct Quad <: WrappedEntity
+    entity::Entity
 end
-Quad(scene::Scene, e::Entity) = Quad(WrappedEntity(scene, e))
-# @implement_entity_wrapper_methods Quad.we
-eval(implement_entity_wrapper_methods(Quad, :we))
+Quad(scene::Scene, e::RawEntity) = Quad(Entity(scene, e))
 
 
 # This generates a Quad entity
@@ -49,7 +47,7 @@ function addQuad!(
         uv::LRBT = uv(texture), name::String = "Unnamed Entity"
     )
     transform = Transform2D(position, rotation, size)
-    e = Entity(registry(scene),
+    e = Entity(scene,
         transform, QuadVertices(transform, uv),
         ColorComponent(color),
         SimpleTexture(texture),
@@ -58,7 +56,7 @@ function addQuad!(
         NameComponent(name),
         args...
     )
-    Quad(scene, e)
+    Quad(e)
 end
 
 
@@ -136,7 +134,7 @@ requested_components(::BatchRenderer) = (
     SimpleTexture, ColorComponent, QuadVertices, IsVisible, TilingFactor
 )
 
-function update(br::BatchRenderer, reg::AbstractLedger)
+function update!(app, br::BatchRenderer, reg::AbstractLedger, ts)
     # Find active camera
     cameras = reg[CameraComponent]
     projection_view = zero(Mat4f0)
@@ -229,7 +227,7 @@ destroy(br::BatchRenderer) = begin destroy(br.va); destroy(br.shader) end
 struct ApplyTransform <: System end
 
 requested_components(::ApplyTransform) = (Transform2D, QuadVertices)
-function update(::ApplyTransform, reg::AbstractLedger)
+function update!(app, ::ApplyTransform, reg::AbstractLedger, ts)
     transforms = reg[Transform2D]
     quads = reg[QuadVertices]
 

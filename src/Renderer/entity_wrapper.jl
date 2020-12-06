@@ -1,52 +1,62 @@
+const RawEntity = Overseer.Entity
+
+abstract type AbstractEntity end
+
 """
-    WrappedEntity(scene, entity)
-    WrappedEntity(scene, components...)
+    abstract type WrappedEntity <: AbstractEntity
 
-Wraps an entity to make it more convenient to use. Essentially on can modify
-components directly with a `WrappedEntity`, rather than going through the
-registry/ledger (or here Scene).
+A type inheriting from `WrappedEntity` should have a field `entity` of type
+`Entity` or `SceneEntity`, or implement
 
-WrappedEntity should generally be returned by game object constructors.
+    entity(::ConcreteWrappedEntity) -> Entity or SceneEntity
+
+to implement entity functionality.
 """
-struct WrappedEntity
-    parent::Scene
-    entity::Entity
+abstract type WrappedEntity <: AbstractEntity end
+
+struct Entity <: AbstractEntity
+    registry::Overseer.Ledger
+    entity::RawEntity
 end
 
-function WrappedEntity(scene::Scene, components...)
-    WrappedEntity(scene, Entity(registry(scene), components...))
+
+
+"""
+    Entity(reg::Overseer.Ledger, entity::Overseer.Entity)
+    Entity(reg::Overseer.Ledger, entity::RawEntity)
+    Entity(reg::Overseer.Ledger, components...)
+
+    Entity(scene::Scene, entity::Overseer.Entity)
+    Entity(scene::Scene, entity::RawEntity)
+    Entity(scene::Scene, components...)
+
+Creates an `Entity` which wraps the registry/ledger to simplify modification.
+For example, it simplifies `registry(scene)[Component][entity]` to 
+`entity[Component]`.
+
+If a set of components is passed instead of a raw entity, a new entity will be 
+created and embeded in the passed registry/ledger or scene.
+"""
+function Entity(reg::Overseer.Ledger, components...)
+    Entity(reg, RawEntity(registry(scene), components...))
 end
 
-registry(we::WrappedEntity) = registry(we.parent)
-entity(we::WrappedEntity) = we.entity
-Base.push!(we::WrappedEntity, component) = registry(we)[we.entity] = component
-Base.haskey(we::WrappedEntity, key) = we.entity in registry(we)[key]
-Base.in(key, we::WrappedEntity) = we.entity in registry(we)[key]
-Base.getindex(we::WrappedEntity, key) = registry(we)[key][we.entity]
-Base.setindex!(we::WrappedEntity, val, key) = registry(we)[key][we.entity] = val
-Base.delete!(we::WrappedEntity) = delete!(registry(we), we.entity)
-Base.delete!(we::WrappedEntity, key) = pop!(registry(we)[key], we.entity)
-Base.pop!(we::WrappedEntity, key) = pop!(registry(we)[key], we.entity)
 
 
-# """
-#     @implement_entity_wrapper_methods Type.field
+# generic interface
+@inline registry(e::AbstractEntity) = e.registry
+@inline RawEntity(e::AbstractEntity) = e.entity
+Base.push!(e::AbstractEntity, component) = registry(e)[RawEntity(e)] = component
+Base.haskey(e::AbstractEntity, key) = RawEntity(e) in registry(e)[key]
+Base.in(key, e::AbstractEntity) = RawEntity(e) in registry(e)[key]
+Base.getindex(e::AbstractEntity, key) = registry(e)[key][RawEntity(e)]
+Base.setindex!(e::AbstractEntity, val, key) = registry(e)[key][RawEntity(e)] = val
+Base.delete!(e::AbstractEntity) = delete!(registry(e), RawEntity(e))
+Base.delete!(e::AbstractEntity, key) = pop!(registry(e)[key], RawEntity(e))
+Base.pop!(e::AbstractEntity, key) = pop!(registry(e)[key], RawEntity(e))
 
-# Implements WrappedEntity methods for the given `Type` with `Type.field` being a
-# WrappedEntity.
-# """
-# macro implement_entity_wrapper_methods(input::Expr)
-function implement_entity_wrapper_methods(T, field)
-    quote
-        registry(x::$T) = registry(x.$field)
-        Base.push!(x::$T, component) = push!(x.$field, component)
-        Base.haskey(x::$T, key) = haskey(x.$field, key)
-        Base.in(key, x::$T) = in(key, x.$field)
-        Base.getindex(x::$T, key) = getindex(x.$field, key)
-        Base.setindex!(x::$T, val, key) = setindex!(x.$field, val, key)
-        Base.delete!(x::$T) = delete!(x.$field)
-        Base.delete!(x::$T, key) = delete!!(x.$field, key)
-        Base.pop!(x::$T, key) = pop!(x.$field, key)
-        entity(x::$T) = entity(x.$field)
-    end
-end
+
+# Overloads
+@inline entity(e::WrappedEntity) = e.entity
+@inline registry(e::WrappedEntity) = registry(entity(e))
+@inline RawEntity(e::WrappedEntity) = RawEntity(entity(e))

@@ -8,6 +8,7 @@
 # Transform2D (semi-internal)
 # IsVisible
 # TilingFactor
+# ScriptComponent
 
 
 
@@ -108,3 +109,27 @@ for batch rendered quads. (?)
     tf::Float32
 end
 TilingFactor() = TilingFactor(1f0)
+
+
+
+@doc """
+    ScriptComponent([; create!, update!, destroy!])
+
+Creates a script component.
+
+* `create!(app, entity)`: TODO
+* `update!(app, entity, dt)`: runs once per update
+* `destroy!(app, entity)`: TODO
+""" ScriptComponent
+@component struct ScriptComponent
+    create!::Function
+    update!::Function
+    destroy!::Function
+end
+function ScriptComponent(;
+        create! = (app, entity) -> nothing,
+        update! = (app, entity, dt) -> nothing,
+        destroy! = (app, entity) -> nothing
+    )
+    ScriptComponent(create!, update!, destroy!)
+end

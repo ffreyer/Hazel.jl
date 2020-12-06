@@ -69,3 +69,30 @@ Scales an `object` by a given `scale`.
 @inline scaleby!(x, s) = scaleby!(x, Vec{length(s)}(s))
 @inline scaleby!(x, s::Real) = scaleby!(x, Vec{3, Float32}(s))
 @inline scaleby!(x, s::Vec) = scaleby!(x, Vec{length(s), Float32}(s))
+
+
+
+################################################################################
+
+
+struct Timestep
+    t::Float64
+    dt::Float32
+end
+
+"""
+    Timestep()
+    Timestep(time_step)
+
+Creates a `Timestep` object which holds the current time (as of creation) and
+the time difference to the last time_step.
+"""
+Timestep() = Timestep(Float32(time()), NaN32)
+function Timestep(ts::Timestep)
+    t = time()
+    Timestep(t, Float32(t - ts.t))
+end
+current(t::Timestep) = t.t
+Base.time(t::Timestep) = t.t
+Base.step(t::Timestep) = t.dt
+delta(t::Timestep) = t.dt

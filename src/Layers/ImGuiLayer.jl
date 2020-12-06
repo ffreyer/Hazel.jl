@@ -34,8 +34,8 @@ end
     nothing
 end
 
-@HZ_profile update!(l::ImGuiLayer, other, dt) = nothing
-@HZ_profile function update!(l::ImGuiLayer, other::ImGuiLayer, dt)
+@HZ_profile update!(app, l::ImGuiLayer, other, ts) = nothing
+@HZ_profile function update!(app, l::ImGuiLayer, other::ImGuiLayer, ts)
     True = true
     CImGui.@c CImGui.ShowDemoWindow(&True)
     nothing

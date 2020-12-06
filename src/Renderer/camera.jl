@@ -69,6 +69,12 @@ function resize_viewport!(c::CameraComponent, width, height)
     nothing
 end
 
+# TODO this should change c.ortho_size in some cases
+function setview!(c::CameraComponent, view::Mat4f0)
+    c.view = view
+    recalculate_projection_view!(c)
+end
+
 
 
 ################################################################################
@@ -77,15 +83,13 @@ end
 
 
 
-struct Camera
-    we::WrappedEntity
+struct Camera <: WrappedEntity
+    entity::Entity
 end
-# @implement_entity_wrapper_methods Camera.we
-eval(implement_entity_wrapper_methods(Camera, :we))
 
 
 function Camera(scene, components...; name = "Camera", kwargs...)
-    we = WrappedEntity(
+    we = Entity(
         scene, NameComponent(name), 
         CameraComponent(; kwargs...), 
         components...
@@ -104,7 +108,7 @@ end
 function activate!(c::Camera)
     cameras = registry(c)[CameraComponent]
     for e in @entities_in(cameras)
-        should_be_active = e == entity(c)
+        should_be_active = e == RawEntity(c)
         if cameras[e].active != should_be_active
             cameras[e].active = should_be_active
         end
@@ -119,5 +123,7 @@ end
 function resize_viewport!(c::Camera, width, height)
     resize_viewport!(c[CameraComponent], width, height)
 end
+
+setview!(c::Camera, view) = setview!(c[CameraComponent], view)
 
 # TODO ...

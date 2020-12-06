@@ -17,8 +17,9 @@ using FileIO, ImageIO, FixedPointNumbers, ImageMagick # loading png files
 using TimerOutputs
 export print_timer, reset_timer!
 
-using Overseer
-import Overseer: update, requested_components
+import Overseer
+import Overseer: requested_components, @entities_in, System, @component, Stage,
+                 AbstractLedger
 
 
 # projection math, LRBT, transformations
@@ -91,8 +92,8 @@ export moveto!, moveby!, position, rotateto!, rotateby!, rotation, zoom, zoom!
 export RegularSpriteSheet
 # export projection, view, projection_view # Should these be exported?
 export Scene, camera, render
-export Quad, addQuad!, addBatchRenderingStage!, WrappedEntity, setcolor!
-export NameComponent
+export Quad, addQuad!, addBatchRenderingStage!, setcolor!
+export NameComponent, ScriptComponent, Entity
 export Camera, activate!
 
 

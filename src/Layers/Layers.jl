@@ -20,7 +20,7 @@ detach(l::AbstractLayer, app::AbstractApplication) = @debug "$l does not impleme
 
 
 """
-    update!(layer, dt)
+    update!(app, layer, ts)
 
 Update the `layer`. Typically this means rendering the layer, as this function
 is called once per frame.
@@ -28,7 +28,7 @@ is called once per frame.
 `dt` is the time difference since the last call to update in seconds. (I.e the
 time to render one frame.)
 """
-update!(l::AbstractLayer, dt) = @debug "$l does not implement `update!`"
+update!(app, l::AbstractLayer, ts) = @debug "$l does not implement `update!`"
 # NOTE Note every layer will need this
 
 """

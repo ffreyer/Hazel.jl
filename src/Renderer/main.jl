@@ -3,13 +3,18 @@ include("Camera/Camera.jl")
 # "high"-level Renderer implementation
 include("SubTexture2D.jl")
 
-# ECS related (core)
-include("Scene.jl")
-include("components.jl")
+# ECS related (core - wrappers and functionality)
 include("entity_wrapper.jl")
-include("camera.jl")
+include("systems.jl")
 
-# special stuff
+# Making use of the ECS
+# generic components
+include("components.jl")
+# more or less a registry wrapper
+include("Scene.jl")
+# Camera entity, components and system
+include("camera.jl")
+# batch rendering - Quad entity, components and systems
 include("batch_rendering.jl")
 
 # old

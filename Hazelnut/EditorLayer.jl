@@ -7,8 +7,7 @@ using Hazel: CImGui, ImGuiLayer
 
 using LinearAlgebra, Printf
 
-struct EditorLayer{AT <: AbstractApplication} <: AbstractLayer
-    app::Ref{AT}
+struct EditorLayer <: AbstractLayer
     camera_controller::OrthographicCameraController
     framebuffer::Ref{Framebuffer}
 
@@ -36,6 +35,7 @@ function EditorLayer()
     ), Nx=20, Ny=13)
 
     scene = Scene()
+    push!(scene, Hazel.Stage(:PreRender, [Hazel.RunScript()]))
     
     tilemap = string2map("""
     WWWW WWWW WWWW WWWW WWWW WWWW
@@ -62,12 +62,26 @@ function EditorLayer()
     addBatchRenderingStage!(scene)
 
     camera = Camera(scene, name = "Orthographic Camera")
+    script = ScriptComponent(
+        update! = (app, entity, ts) -> begin
+            offset = Hazel.delta(ts) * Vec3f0(
+                keypressed(app, Hazel.KEY_D) - keypressed(app, Hazel.KEY_A),
+                keypressed(app, Hazel.KEY_W) - keypressed(app, Hazel.KEY_S),
+                0
+            )
+            Hazel.setview!(
+                entity[Hazel.CameraComponent], 
+                Hazel.translationmatrix(
+                    Vec3f0(entity[Hazel.CameraComponent].view[Vec3(13,14,15)]) .+ offset
+                )
+            )
+        end
+    )
+    push!(camera, script)
     camera2 = Camera(scene, name = "Clip Space Camera", ortho_size = 2f0)
     activate!(camera)
-    Hazel.glDisable(Hazel.GL_BLEND)
 
     EditorLayer(
-        Ref{BasicApplication}(),
         camera_controller,
         Ref{Framebuffer}(),
         Float32[0.2, 0.4, 0.8, 1.0],
@@ -107,18 +121,13 @@ end
 
 function Hazel.attach(l::EditorLayer, app::AbstractApplication)
     @info "Attaching EditorLayer to $(typeof(app))"
-    l.app[] = app
     l.framebuffer[] = Hazel.Framebuffer(size(Hazel.window(app))...)
     id = l.framebuffer[].t_id
     Hazel.CImGui.OpenGLBackend.g_ImageTexture[Int(id)] = id
 end
 
 
-@HZ_profile function Hazel.update!(l::EditorLayer, dt)
-    app = l.app[]
-
-    # @HZ_profile "Update camera" update!(l.camera_controller, app, dt)
-    
+@HZ_profile function Hazel.update!(app, l::EditorLayer, ts)
     # Clear window
     RenderCommand.clear()
 
@@ -127,14 +136,14 @@ end
     RenderCommand.clear()
 
     @HZ_profile "Render Layer" begin
-        render(l.scene)
+        update!(app, l.scene, ts)
     end
     Hazel.unbind(l.framebuffer[])
 
     nothing
 end
 
-@HZ_profile function Hazel.update!(gui_layer::ImGuiLayer, sl::EditorLayer, dt)
+@HZ_profile function Hazel.update!(app, gui_layer::ImGuiLayer, sl::EditorLayer, ts)
     CImGui.PushStyleVar(CImGui.ImGuiStyleVar_WindowPadding, (0, 0))
     CImGui.Begin("Viewport")
     sl.viewport_focused[] = CImGui.IsWindowFocused()
@@ -145,7 +154,7 @@ end
         resize!(sl.framebuffer[], w, h)
         resize!(sl.camera_controller, w, h)
         Hazel.resize_viewport!(sl.scene, w, h)
-        update!(sl, 0.0)
+        update!(app, sl, ts)
     end
     CImGui.Image(Ptr{Cvoid}(Int(sl.framebuffer[].t_id)), window_size, (0, 1), (1, 0))
     CImGui.End()
