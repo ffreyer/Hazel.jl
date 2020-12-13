@@ -121,15 +121,28 @@ Creates a script component.
 * `update!(app, entity, dt)`: runs once per update
 * `destroy!(app, entity)`: TODO
 """ ScriptComponent
-@component struct ScriptComponent
+@component mutable struct ScriptComponent
     create!::Function
     update!::Function
     destroy!::Function
 end
 function ScriptComponent(;
-        create! = (app, entity) -> nothing,
-        update! = (app, entity, dt) -> nothing,
-        destroy! = (app, entity) -> nothing
+        create! = (entity) -> nothing,
+        update! = (app, raw_entity, dt) -> nothing,
+        destroy! = (script_component) -> nothing
     )
-    ScriptComponent(create!, update!, destroy!)
+    # Still need to debate how exactly this should work
+    # Pretty sure I don't want Functors here, because
+    #   - the component array would be unstable
+    #   - the component array would have var-sized elements
+    #   - We could just have extra components carrying that data
+    # Also no abstract type for similar reasons
+    # destroy! could be called on destroy!(scene) or as a finalizer
+    # create! should be on push!, probably
+    # Kinda need an app reference too though, ugh
+    finalizer(destroy!, ScriptComponent(create!, update!, destroy!))
+end
+function Base.push!(e::AbstractEntity, script::ScriptComponent)
+    script.create!(e)
+    registry(e)[RawEntity(e)] = script
 end
