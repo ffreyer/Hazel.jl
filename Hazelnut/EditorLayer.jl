@@ -7,6 +7,8 @@ using Hazel: CImGui, ImGuiLayer
 
 using LinearAlgebra, Printf
 
+include("Panels/SceneHierarchy.jl")
+
 struct EditorLayer <: AbstractLayer
     camera_controller::OrthographicCameraController
     framebuffer::Ref{Framebuffer}
@@ -20,6 +22,8 @@ struct EditorLayer <: AbstractLayer
     camera::Camera
     camera2::Camera
     active_primary_camera::Ref{Bool}
+
+    p::SceneHierarchyPanel
 
     viewport_focused::Ref{Bool}
 end
@@ -58,7 +62,7 @@ function EditorLayer()
     for i in 1:size(tilemap, 1), j in 1:size(tilemap, 2)
         addQuad!(scene, position = Vec3f0(i-12, j-7, 0), texture = tilemap[i, j])
     end
-    quad = addQuad!(scene, position = Vec3f0(0, 0, 0.1), color=Vec4f0(1, 0.5, 0.5, 1))
+    quad = addQuad!(scene, position = Vec3f0(0, 0, 0.1), color=Vec4f0(1, 0.5, 0.5, 1), name = "Colored Square")
     addBatchRenderingStage!(scene)
 
     camera = Camera(scene, name = "Orthographic Camera")
@@ -92,6 +96,7 @@ function EditorLayer()
         Float32[0.2, 0.4, 0.8, 1.0],
         scene, spritesheet,
         quad, camera, camera2, Ref{Bool}(true),
+        SceneHierarchyPanel(scene),
         Ref(false)
     )
 end
@@ -172,6 +177,8 @@ end
     CImGui.Checkbox("Use orthographic camera", sl.active_primary_camera)
     activate!(sl.active_primary_camera[] ? sl.camera : sl.camera2)
     CImGui.End()
+
+    render!(sl.p)
 
     nothing
 end

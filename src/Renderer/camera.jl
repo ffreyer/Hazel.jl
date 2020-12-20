@@ -88,7 +88,7 @@ struct Camera <: WrappedEntity
 end
 
 
-function Camera(scene, components...; name = "Camera", kwargs...)
+function Camera(scene, components...; name = "Unnamed Camera", kwargs...)
     we = Entity(
         scene, NameComponent(name), 
         CameraComponent(; kwargs...), 

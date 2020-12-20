@@ -21,6 +21,7 @@ This component holds a name.
     name::String
 end
 NameComponent() = NameComponent("Unnamed Entity")
+Base.string(c::NameComponent) = c.name
 
 
 

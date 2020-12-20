@@ -54,6 +54,7 @@ Base.setindex!(e::AbstractEntity, val, key) = registry(e)[key][RawEntity(e)] = v
 Base.delete!(e::AbstractEntity) = delete!(registry(e), RawEntity(e))
 Base.delete!(e::AbstractEntity, key) = pop!(registry(e)[key], RawEntity(e))
 Base.pop!(e::AbstractEntity, key) = pop!(registry(e)[key], RawEntity(e))
+Base.:(==)(e1::AbstractEntity, e2::AbstractEntity) = RawEntity(e1) == RawEntity(e2)
 
 
 # Overloads

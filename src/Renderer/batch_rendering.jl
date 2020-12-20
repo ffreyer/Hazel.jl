@@ -44,7 +44,7 @@ function addQuad!(
         position::Vec3f0=Vec3f0(0), size::Vec2f0=Vec2f0(1), rotation = 0f0,
         color::Vec4f0 = Vec4f0(1), texture = blank_texture(scene), 
         tilingfactor::Float32 = 1f0, visible::Bool = true,
-        uv::LRBT = uv(texture), name::String = "Unnamed Entity"
+        uv::LRBT = uv(texture), name::String = "Unnamed Quad"
     )
     transform = Transform2D(position, rotation, size)
     e = Entity(scene,
