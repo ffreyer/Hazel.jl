@@ -45,9 +45,13 @@ function Framebuffer(width=800, height=600)
 end
 
 function destroy(fb::Framebuffer)
-    glDeleteTextures(1, fb.t_id)
-    glDeleteTextures(1, fb.d_id)
-    glDeleteFramebuffers(1, fb.fb_id)
+    try
+        glDeleteTextures(1, Ref(fb.t_id))
+        glDeleteTextures(1, Ref(fb.d_id))
+        glDeleteFramebuffers(1, Ref(fb.fb_id))
+    catch e
+        @error "Framebuffer" exception=e
+    end
 end
 
 function bind(fb::Framebuffer)

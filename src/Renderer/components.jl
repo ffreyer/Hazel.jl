@@ -141,8 +141,9 @@ function ScriptComponent(;
     # destroy! could be called on destroy!(scene) or as a finalizer
     # create! should be on push!, probably
     # Kinda need an app reference too though, ugh
-    finalizer(destroy!, ScriptComponent(create!, update!, destroy!))
+    finalizer(destroy, ScriptComponent(create!, update!, destroy!))
 end
+destroy(s::ScriptComponent) = s.destroy!(s)
 function Base.push!(e::AbstractEntity, script::ScriptComponent)
     script.create!(e)
     registry(e)[RawEntity(e)] = script
