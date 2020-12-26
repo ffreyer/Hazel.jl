@@ -10,7 +10,6 @@ using LinearAlgebra, Printf
 include("Panels/SceneHierarchy.jl")
 
 struct EditorLayer <: AbstractLayer
-    camera_controller::OrthographicCameraController
     framebuffer::Ref{Framebuffer}
 
     color::Vector{Float32}
@@ -29,17 +28,12 @@ struct EditorLayer <: AbstractLayer
 end
 
 function EditorLayer()
-    # Build a basic Scene
-    camera_controller = OrthographicCameraController(1280/720, rotation = true)
-    zoom!(camera_controller, 10f0)
-
     # 2560 x 1664 ~ 20x13 Tiles @ 128x128
     spritesheet = RegularSpriteSheet(joinpath(
         Hazel.assetpath, "textures/kenneyrpgpack/Spritesheet/RPGpack_sheet_2X.png"
     ), Nx=20, Ny=13)
 
     scene = Scene()
-    push!(scene, Hazel.Stage(:PreRender, [Hazel.RunScript()]))
     
     tilemap = string2map("""
     WWWW WWWW WWWW WWWW WWWW WWWW
@@ -63,35 +57,27 @@ function EditorLayer()
         addQuad!(scene, position = Vec3f0(i-12, j-7, 0), texture = tilemap[i, j])
     end
     quad = addQuad!(scene, position = Vec3f0(0, 0, 0.1), color=Vec4f0(1, 0.5, 0.5, 1), name = "Colored Square")
-    addBatchRenderingStage!(scene)
 
     camera = Camera(scene, name = "Orthographic Camera")
     script = ScriptComponent(
-        create! = (e) -> begin
-            e[Hazel.CameraComponent].view = Hazel.translationmatrix(
-                Vec3f0(randn(), randn(), 0f0)
-            )
-        end,
+        create! = (e) -> moveto!(Camera(e), Vec3f0(randn(), randn(), 0f0)),
         update! = (app, entity, ts) -> begin
             offset = Hazel.delta(ts) * Vec3f0(
                 keypressed(app, Hazel.KEY_D) - keypressed(app, Hazel.KEY_A),
                 keypressed(app, Hazel.KEY_W) - keypressed(app, Hazel.KEY_S),
                 0
             )
-            Hazel.setview!(
-                entity[Hazel.CameraComponent], 
-                Hazel.translationmatrix(
-                    Vec3f0(entity[Hazel.CameraComponent].view[Vec3(13,14,15)]) .+ offset
-                )
-            )
+            moveby!(Camera(entity), offset)
         end
     )
     push!(camera, script)
-    camera2 = Camera(scene, name = "Clip Space Camera", ortho_size = 2f0)
+    camera2 = Camera(scene, name = "Clip Space Camera", height = 2f0)
     activate!(camera)
 
+    push!(scene, Hazel.Stage(:PreRender, [Hazel.RunScript(), Hazel.CameraUpdate()]))
+    addBatchRenderingStage!(scene)
+
     EditorLayer(
-        camera_controller,
         Ref{Framebuffer}(),
         Float32[0.2, 0.4, 0.8, 1.0],
         scene, spritesheet,
@@ -162,7 +148,6 @@ end
     if window_size != size(sl.framebuffer[])
         w = trunc(UInt32, window_size.x); h = trunc(UInt32, window_size.y)
         resize!(sl.framebuffer[], w, h)
-        resize!(sl.camera_controller, w, h)
         Hazel.resize_viewport!(sl.scene, w, h)
         update!(app, sl, ts)
     end
@@ -185,9 +170,9 @@ end
 
 
 @HZ_profile function Hazel.handle!(l::EditorLayer, e::AbstractEvent)
-    if l.viewport_focused[]
-        return handle!(l.camera_controller, e)
-    end
+    # if l.viewport_focused[]
+    #     return handle!(l.camera_controller, e)
+    # end
     false
 end
 

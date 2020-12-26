@@ -1,78 +1,61 @@
 ################################################################################
-### Component(s)
+### Components
 ################################################################################
 
 
+# Transform2D takes the role of the view matrix
 
-# NOTE: TheCherno has this split into (projection, active) and (view^-1)
-@component mutable struct CameraComponent
-    projection::Mat4f0
-    view::Mat4f0
-    projection_view::Mat4f0
-
-    ortho_size::Float32
-    ortho_near::Float32
-    ortho_far::Float32
+# This is the projection matrix
+@component struct OrthographicProjection
     aspect::Float32
+    height::Float32
+    near::Float32
+    far::Float32
 
+    projection::Mat4f0
+    has_changed::Bool # maybe unneeded?
+
+    function OrthographicProjection(
+            aspect = 16f0/9f0, height = 10f0,
+            near = -1f0, far = 1f0,
+            projection = orthographicprojection(aspect, height, near, far),
+            has_changed = false
+        )
+        new(aspect, height, near, far, projection, has_changed)
+    end
+end
+
+function OrthographicProjection(
+        p::OrthographicProjection;
+        aspect = p.aspect, height = p.height,
+        near = p.near, far = p.far,
+        projection = orthographicprojection(aspect, height, near, far),
+        has_changed = true
+    )
+    OrthographicProjection(aspect, height, near, far, projection, has_changed)
+end
+
+function orthographicprojection(
+        aspect::Float32, height::Float32, near::Float32, far::Float32
+    )
+    left    = -0.5aspect * height
+    right   = +0.5aspect * height
+    bottom  = -0.5height
+    top     = +0.5height
+    orthographicprojection(left, right, bottom, top, near, far)
+end
+
+# This is extra information
+@component mutable struct CameraComponent
+    projection_view::Mat4f0
     fix_aspect_ratio::Bool
     active::Bool
-end
-function CameraComponent(;
-        projection = Mat4f0(I), view = Mat4f0(I), 
-        projection_view = projection * view,
-        ortho_size = 10f0, ortho_near = -1f0, ortho_far = 1f0, aspect = 16f0/9f0,
-        fix_aspect_ratio = false, active = true
-    )
-    CameraComponent(
-        projection, view, projection_view, 
-        ortho_size, ortho_near, ortho_far, aspect,
-        fix_aspect_ratio, active
-    )
-end
 
-
-
-function recalculate!(c::CameraComponent)
-    aspect = c.aspect
-    left    = -0.5aspect * c.ortho_size
-    right   = +0.5aspect * c.ortho_size
-    bottom  = -0.5 * c.ortho_size
-    top     = +0.5 * c.ortho_size
-
-    c.projection = orthographicprojection(
-        left, right, bottom, top, c.ortho_near, c.ortho_far
-    )
-    recalculate_projection_view!(c)
-    nothing
-end
-
-function recalculate_projection_view!(c::CameraComponent)
-    c.projection_view = c.view * c.projection
-    nothing
-end
-
-function orthographic!(
-        c::CameraComponent, 
-        size=c.ortho_size, near_clip=c.ortho_near, far_clip=c.ortho_far
-    )
-    c.ortho_size = Float32(size)
-    c.ortho_near = Float32(near_clip)
-    c.ortho_far  = Float32(far_clip)
-    recalculate!(c)
-    nothing
-end
-
-function resize_viewport!(c::CameraComponent, width, height)
-    c.aspect = width / height
-    recalculate!(c)
-    nothing
-end
-
-# TODO this should change c.ortho_size in some cases
-function setview!(c::CameraComponent, view::Mat4f0)
-    c.view = view
-    recalculate_projection_view!(c)
+    function CameraComponent(
+            fix_aspect_ratio=false, active=true, projection_view = Mat4f0(I)
+        )
+        new(projection_view, fix_aspect_ratio, active)
+    end
 end
 
 
@@ -88,21 +71,39 @@ struct Camera <: WrappedEntity
 end
 
 
-function Camera(scene, components...; name = "Unnamed Camera", kwargs...)
+function Camera(
+        scene, components...; 
+        name = "Unnamed Camera",
+        position = Vec3f0(0), rotation = 0f0, scale = Vec2f0(1),
+        height = 10f0, width = height * 16f0/9f0, aspect = width/height,
+        near = -1f0, far = 1f0,
+        fix_aspect_ratio = false, active = true
+    )
     we = Entity(
-        scene, NameComponent(name), 
-        CameraComponent(; kwargs...), 
+        scene, 
+        NameComponent(name), 
+        Transform2D(position, rotation, scale),
+        OrthographicProjection(aspect, height, near, far),
+        CameraComponent(fix_aspect_ratio, active),
         components...
     )
-    Camera(we)
+    cam = Camera(we)
+    recalculate_projection_view!(cam)
+    cam
 end
 
 
+# Backend
 
-################################################################################
-### Utilities
-################################################################################
 
+function recalculate_projection_view!(cam::Camera)
+    cam[CameraComponent].projection_view = 
+        cam[Transform2D].T * cam[OrthographicProjection].projection
+    nothing
+end
+
+
+# Frontend
 
 
 function activate!(c::Camera)
@@ -116,14 +117,60 @@ function activate!(c::Camera)
     nothing
 end
 
-function orthographic!(c::Camera, size=10f0, near_clip=-1f0, far_clip=1f0)
-    orthographic!(c[CameraComponent], size, near_clip, far_clip)
+function orthographic!(c::Camera; kwargs...)
+    c[OrthographicProjection] = OrthographicProjection(
+        c[OrthographicProjection]; kwargs...
+    )
+    recalculate_projection_view!(c)
 end
 
-function resize_viewport!(c::Camera, width, height)
-    resize_viewport!(c[CameraComponent], width, height)
+
+# Transformations
+
+function transform!(c::Camera; kwargs...)
+    # We do not want to trigger an update during System
+    c[Transform2D] = Transform2D(c[Transform2D]; kwargs..., has_changed=false)
+    recalculate_projection_view!(c)
+    nothing
 end
 
-setview!(c::Camera, view) = setview!(c[CameraComponent], view)
+moveto!(c::Camera, pos::Vec3f0) = transform!(c, position = pos)
+rotateto!(c::Camera, θ::Float32) = transform!(c, position = θ)
+scaleto!(c::Camera, scale::Vec2f0) = transform!(c, position = scale)
 
-# TODO ...
+position(c::Camera) = c[Transform2D].position
+rotation(c::Camera) = c[Transform2D].rotation
+scale(c::Camera) = c[Transform2D].scale
+
+moveby!(c::Camera, v::Vec3f0) = transform!(c, position = position(c) .+ v)
+rotateby!(c::Camera, θ::Float32) = transform!(c, rotation = rotation(c) + θ)
+scaleby!(c::Camera, s::Vec2f0) = transform!(c, scale = scale(c) .+ s)
+
+
+
+################################################################################
+### Systems
+################################################################################
+
+
+struct CameraUpdate <: System end
+
+requested_components(::CameraUpdate) = (Transform2D, OrthographicProjection, CameraComponent)
+function update!(app, ::CameraUpdate, reg::AbstractLedger, ts)
+    transforms = reg[Transform2D]
+    projections = reg[OrthographicProjection]
+    cameras = reg[CameraComponent]
+
+    for e in @entities_in(transforms && projections && cameras)
+        if cameras[e].active
+            T = transforms[e]
+            P = projections[e]
+            if T.has_changed || P.has_changed
+                cameras[e].projection_view = T.T * P.projection
+                transforms[e] = Transform2D(T, has_changed=false)
+                projections[e] = OrthographicProjection(P, has_changed=false)
+            end
+        end
+    end
+    nothing
+end

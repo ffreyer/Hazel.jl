@@ -118,9 +118,9 @@ TilingFactor() = TilingFactor(1f0)
 
 Creates a script component.
 
-* `create!(app, entity)`: TODO
+* `create!(entity)`: TODO
 * `update!(app, entity, dt)`: runs once per update
-* `destroy!(app, entity)`: TODO
+* `destroy!(entity)`: TODO
 """ ScriptComponent
 @component mutable struct ScriptComponent
     create!::Function
@@ -145,6 +145,6 @@ function ScriptComponent(;
 end
 destroy(s::ScriptComponent) = s.destroy!(s)
 function Base.push!(e::AbstractEntity, script::ScriptComponent)
-    script.create!(e)
+    script.create!(Entity(registry(e), RawEntity(e)))
     registry(e)[RawEntity(e)] = script
 end
