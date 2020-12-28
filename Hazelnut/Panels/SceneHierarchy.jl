@@ -83,12 +83,19 @@ function draw_components!(entity::Hazel.Entity)
     end
 
 
-    @componentUI Hazel.Transform2D "Transform 2D" begin
-        pos = Vector(entity[Hazel.Transform2D].position)
-        if CImGui.DragFloat3("Position", pos, 0.5f0)
-            entity[Hazel.Transform2D] = Hazel.Transform2D(
-                entity[Hazel.Transform2D], position = Vec3f0(pos)
-            )
+    @componentUI Hazel.Transform "Transform" begin
+        t = entity[Hazel.Transform]
+        pos = Vector(t.translation)
+        rot = Float32(360/2pi) .* Vector(t.rotation)
+        scale = Vector(t.scale)
+        if draw_vec3_control("Translation", pos)
+            t.translation = Vec3f0(pos)
+        end
+        if draw_vec3_control("Rotation", rot)
+            t.rotation = Float32(2pi / 360) .* Vec3f0(rot)
+        end
+        if draw_vec3_control("Scale", scale, 1f0)
+            t.scale = Vec3f0(scale)
         end
         CImGui.TreePop()
     end
@@ -150,3 +157,69 @@ function draw_components!(entity::Hazel.Entity)
 end
 
 
+function draw_vec3_control(label, values, reset=0f0, columnwidth=100f0)
+    changed = false
+    x = Ref(values[1])
+    y = Ref(values[2])
+    z = Ref(values[3])
+
+    CImGui.PushID(label)
+    CImGui.Columns(2)
+    CImGui.SetColumnWidth(0, columnwidth)
+    CImGui.Text(label)
+    CImGui.NextColumn()
+
+    CImGui.PushStyleVar(CImGui.ImGuiStyleVar_ItemSpacing, CImGui.ImVec2(0f0, 0f0))
+    lineheight = CImGui.GetFontSize() + 2f0 * CImGui.GetStyle().FramePadding.y
+    buttonsize = CImGui.ImVec2(lineheight + 3f0, lineheight)
+    
+
+    CImGui.PushItemWidth(0.33f0 * CImGui.CalcItemWidth())
+    CImGui.PushStyleColor(CImGui.ImGuiCol_Button, CImGui.ImVec4(0.8f0, 0.1f0, 0.15f0, 1f0))
+    CImGui.PushStyleColor(CImGui.ImGuiCol_ButtonHovered, CImGui.ImVec4(0.9f0, 0.2f0, 0.2f0, 1f0))
+    CImGui.PushStyleColor(CImGui.ImGuiCol_ButtonActive, CImGui.ImVec4(0.8f0, 0.1f0, 0.15f0, 1f0))
+    if CImGui.Button("X", buttonsize)
+        changed = true
+        x[] = reset
+    end
+    CImGui.PopStyleColor(3)
+    CImGui.SameLine()
+    changed = CImGui.DragFloat("##X", x, 0.1f0) || changed
+
+
+    CImGui.SameLine()
+    CImGui.PushStyleColor(CImGui.ImGuiCol_Button, CImGui.ImVec4(0.2f0, 0.7f0, 0.2f0, 1f0))
+    CImGui.PushStyleColor(CImGui.ImGuiCol_ButtonHovered, CImGui.ImVec4(0.3f0, 0.8f0, 0.3f0, 1f0))
+    CImGui.PushStyleColor(CImGui.ImGuiCol_ButtonActive, CImGui.ImVec4(0.2f0, 0.7f0, 0.2f0, 1f0))
+    if CImGui.Button("Y", buttonsize)
+        changed = true
+        y[] = reset
+    end
+    CImGui.PopStyleColor(3)
+    CImGui.SameLine()
+    changed = CImGui.DragFloat("##Y", y, 0.1f0) || changed
+
+
+    CImGui.SameLine()
+    CImGui.PushStyleColor(CImGui.ImGuiCol_Button, CImGui.ImVec4(0.1f0, 0.25f0, 0.8f0, 1f0))
+    CImGui.PushStyleColor(CImGui.ImGuiCol_ButtonHovered, CImGui.ImVec4(0.2f0, 0.35f0, 0.9f0, 1f0))
+    CImGui.PushStyleColor(CImGui.ImGuiCol_ButtonActive, CImGui.ImVec4(0.1f0, 0.25f0, 0.8f0, 1f0))
+    if CImGui.Button("Z", buttonsize)
+        changed = true
+        z[] = reset
+    end
+    CImGui.PopStyleColor(3)
+    CImGui.SameLine()
+    changed = CImGui.DragFloat("##Z", z, 0.1f0) || changed
+
+    CImGui.PopStyleVar()
+    CImGui.Columns(1)
+
+    if changed
+        values[1] = x[]
+        values[2] = y[]
+        values[3] = z[]
+    end
+
+    return changed
+end

@@ -7,7 +7,7 @@ Internal representation of a Quad. This is used to avoid re-computing positions
 of static Quads.
 """ QuadVertices
 @component struct QuadVertices
-    # for efficiency - needs to derived on Transform2D update
+    # for efficiency - needs to derived on Transform update
     positions::NTuple{4, Vec3f0}
     uv::LRBT{Float32}
 end
@@ -17,8 +17,8 @@ function QuadVertices()
         Vec3f0(-0.5,  0.5, 0), Vec3f0( 0.5,  0.5, 0)
     ), LRBT{Float32}(0, 1, 0, 1))
 end
-function QuadVertices(transform::Transform2D, uv = LRBT{Float32}(0, 1, 0, 1))
-    T = transform.T
+function QuadVertices(transform::Transform, uv = LRBT{Float32}(0, 1, 0, 1))
+    T = transform.transform
     QuadVertices((
         T * Vec4f0(-0.5, -0.5, 0, 1), T * Vec4f0( 0.5, -0.5, 0, 1), 
         T * Vec4f0(-0.5,  0.5, 0, 1), T * Vec4f0( 0.5,  0.5, 0, 1)
@@ -41,12 +41,12 @@ Quad(scene::Scene, e::RawEntity) = Quad(Entity(scene, e))
 # This generates a Quad entity
 function addQuad!(
         scene::Scene, args...;
-        position::Vec3f0=Vec3f0(0), size::Vec2f0=Vec2f0(1), rotation = 0f0,
+        position = Vec3f0(0), size = Vec3f0(1), rotation = Vec3f0(0),
         color::Vec4f0 = Vec4f0(1), texture = blank_texture(scene), 
         tilingfactor::Float32 = 1f0, visible::Bool = true,
         uv::LRBT = uv(texture), name::String = "Unnamed Quad"
     )
-    transform = Transform2D(position, rotation, size)
+    transform = Transform(position, rotation, size)
     e = Entity(scene,
         transform, 
         QuadVertices(transform, uv),
@@ -221,21 +221,21 @@ destroy(br::BatchRenderer) = begin destroy(br.va); destroy(br.shader) end
 
 
 
-# This applies a change in Transform2D to QuadVertices
+# This applies a change in Transform to QuadVertices
 # ... in a non-mutable, non-Observable way
 # ... that avoid recalculations when possible
 # ... I hope I didn't overthink this
 struct ApplyTransform <: System end
 
-requested_components(::ApplyTransform) = (Transform2D, QuadVertices)
+requested_components(::ApplyTransform) = (Transform, QuadVertices)
 function update!(app, ::ApplyTransform, reg::AbstractLedger, ts)
-    transforms = reg[Transform2D]
+    transforms = reg[Transform]
     quads = reg[QuadVertices]
 
     for e in @entities_in(transforms && quads)
         T = transforms[e]
         T.has_changed || continue
-        transforms[e] = Transform2D(T, has_changed=false)
+        T.has_changed = false
         # generate new, correctly placed quad
         quads[e] = QuadVertices(T, quads[e].uv)
     end
@@ -263,38 +263,47 @@ end
 
 
 
+# These function handle the "has_changed = true" update on their own
 function _recalculate!(quad::Quad)
-    quad[QuadVertices] = QuadVertices(quad[Transform2D], quad[QuadVertices].uv)
+    quad[QuadVertices] = QuadVertices(quad[Transform], quad[QuadVertices].uv)
     nothing
 end
 
 
 function moveto!(quad::Quad, p::Vec3f0)
-    quad[Transform2D] = Transform2D(quad[Transform2D], position = p, has_changed=false)
+    t = quad[Transform]
+    setfield!(t, :translation, p)
+    setfield!(t, :transform, transform(t.translation, t.rotation, t.scale))
     _recalculate!(quad)
 end
-moveto!(quad::Quad, p::Vec2f0) = moveto!(quad, Vec3f0(p..., quad[Transform2D].position[3]))
+moveto!(quad::Quad, p::Vec2f0) = moveto!(quad, Vec3f0(p..., quad[Transform].position[3]))
 function moveby!(quad::Quad, v::Vec3f0)
-    T = quad[Transform2D]
-    quad[Transform2D] = Transform2D(T, position = T.position .+ v, has_changed=false)
+    t = quad[Transform]
+    setfield!(t, :translation, t.translation .+ v)
+    setfield!(t, :transform, translationmatrix(v) * t.transform)
     _recalculate!(quad)
 end
 moveby!(quad::Quad, v::Vec2f0) = moveto!(quad, Vec3f0(v..., 0))
 
 
 function rotateto!(quad::Quad, θ::Float32)
-    quad[Transform2D] = Transform2D(quad[Transform2D], rotation = θ, has_changed=false)
+    t = quad[Transform]
+    setfield!(t, :rotation, Vec3f0(0, 0, θ))
+    setfield!(t, :transform, transform(t.translation, t.rotation, t.scale))
     _recalculate!(quad)
 end
 function rotateby!(quad::Quad, θ::Float32)
-    T = quad[Transform2D]
-    quad[Transform2D] = Transform2D(T, rotation = T.rotation+θ, has_changed=false)
+    t = quad[Transform]
+    setfield!(t, :rotation, Vec3f0(0, 0, t.rotation[3] + θ))
+    setfield!(t, :transform, transform(t.translation, t.rotation, t.scale))
     _recalculate!(quad)
 end
 
 
 function scaleto!(quad::Quad, s::Vec3f0)
-    quad[Transform2D] = Transform2D(quad[Transform2D], scale = s, has_changed=false)
+    t = quad[Transform]
+    setfield!(t, :scale, s)
+    setfield!(t, :transform, transform(t.translation, t.rotation, t.scale))
     _recalculate!(quad)
 end
 scaleto!(quad::Quad, s::Real) = scaleto!(quad, Float32(s))
@@ -303,8 +312,9 @@ scaleto!(quad::Quad, s::Vec2f0) = scaleto!(quad, Vec3f0(s..., 1.0))
 
 
 function scaleby!(quad::Quad, s::Vec3f0)
-    T = quad[Transform2D]
-    quad[Transform2D] = Transform2D(T, scale = T.scale .* s, has_changed=false)
+    t = quad[Transform]
+    setfield!(t, :scale, t.scale .* s)
+    setfield!(t, :transform, t.transform * scalematrix(s))
     _recalculate!(quad)
 end 
 scaleby!(quad::Quad, s::Real) = scaleby!(quad, Float32(s))

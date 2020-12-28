@@ -5,7 +5,7 @@
 # Name
 # SimpleTexture
 # ColorComponent
-# Transform2D (semi-internal)
+# Transform
 # IsVisible
 # TilingFactor
 # ScriptComponent
@@ -54,36 +54,43 @@ ColorComponent() = Vec4f0(1)
 
 
 @doc """
-    Transform2D([position = Vec3f0(0), rotation = 0f0, scale = Vec2f0(1)])
-    Transform2D(transform2D[; position, rotation, scale])
+    Transform([translation = Vec3f0(0), rotation = Vec3f0(0), scale = Vec3f0(1)])
 
-Semi-internal for batch rendered quads. Holds a `position`, `rotation`, `scale` 
-and the derived transformation matrix `T`.
-""" Transform2D
-@component struct Transform2D
-    position::Vec3f0
-    rotation::Float32
-    scale::Vec2f0
-    T::Mat4f0
+Holds a `translation`, `rotation` and `scale` vector and the derived 
+transformation matrix `transform`. Also hold a Bool `has_changed` to allow
+reactions in Systems. (i.e. Batch rendering, Camera)
+""" Transform
+@component mutable struct Transform
+    translation::Vec3f0
+    rotation::Vec3f0
+    scale::Vec3f0
+    transform::Mat4f0
     has_changed::Bool
 end
-function Transform2D(position = Vec3f0(0), rotation = 0f0, scale = Vec2f0(1))
-    T = translationmatrix(position) * rotationmatrix_z(rotation) * 
-        scalematrix(Vec3f0(scale[1], scale[2], 1))
-    Transform2D(
-        _pad(Vec3f0, position, 0), 
-        Float32(rotation), 
-        _pad(Vec3f0, scale, 1.0), T, true
+function transform(translation::Vec3f0, rotation::Vec3f0, scale::Vec3f0)
+    translationmatrix(translation) *
+    rotationmatrix_x(rotation[1]) *
+    rotationmatrix_y(rotation[2]) *
+    rotationmatrix_z(rotation[3]) *
+    scalematrix(scale)
+end
+function Transform(
+        translation = Vec3f0(0), rotation = Vec3f0(0), scale = Vec3f0(1), 
+        has_changed = true
+    )
+    Transform(
+        translation, rotation, scale, 
+        transform(translation, rotation, scale), 
+        has_changed
     )
 end
-# convenience
-function Transform2D(
-        t::Transform2D; 
-        position=t.position, rotation=t.rotation, scale=t.scale, has_changed=true
-    )
-    T = translationmatrix(position) * rotationmatrix_z(rotation) * 
-        scalematrix(Vec3f0(scale[1], scale[2], 1))
-    Transform2D(position, rotation, scale, T, has_changed)
+function Base.setproperty!(t::Transform, field::Symbol, value)
+    setfield!(t, field, value)
+    if field in (:translation, :rotation, :scale)
+        setfield!(t, :transform, transform(t.translation, t.rotation, t.scale))
+        setfield!(t, :has_changed, true)
+    end
+    value
 end
 
 

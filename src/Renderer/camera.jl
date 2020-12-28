@@ -3,7 +3,7 @@
 ################################################################################
 
 
-# Transform2D takes the role of the view matrix
+# Transform takes the role of the view matrix
 
 # Merge these into one, so we can switch between ortho and perspective easily
 
@@ -61,11 +61,7 @@ end
 
 function projection!(cc::CameraComponent)
     cc.projection = if cc.projection_type === Orthographic
-        left    = -0.5 * cc.aspect * cc.height
-        right   = +0.5 * cc.aspect * cc.height
-        bottom  = -0.5 * cc.height
-        top     = +0.5 * cc.height
-        orthographicprojection(left, right, bottom, top, cc.o_near, cc.o_far)
+        orthographicprojection(cc.aspect, cc.height, cc.o_near, cc.o_far)
     else
         perspectiveprojection(cc.fov, cc.aspect, cc.p_near, cc.p_far)
     end
@@ -75,10 +71,10 @@ end
 function orthographicprojection(
         aspect::Float32, height::Float32, near::Float32, far::Float32
     )
-    left    = -0.5aspect * height
-    right   = +0.5aspect * height
-    bottom  = -0.5height
-    top     = +0.5height
+    left    = -0.5f0 * aspect * height
+    right   = +0.5f0 * aspect * height
+    bottom  = -0.5f0 * height
+    top     = +0.5f0 * height
     orthographicprojection(left, right, bottom, top, near, far)
 end
 
@@ -97,7 +93,7 @@ end
 function Camera(
         scene, components...; 
         name = "Unnamed Camera",
-        position = Vec3f0(0), rotation = 0f0, scale = Vec2f0(1),
+        position = Vec3f0(0), rotation = Vec3f0(0f0), scale = Vec3f0(1),
         height = 10f0, width = height * 16f0/9f0, aspect = width/height,
         orthographic_near = -1f0, orthographic_far = 1f0,
         fov = 45, perspective_near = 0f0, perspective_far = 1f4,
@@ -106,7 +102,7 @@ function Camera(
     we = Entity(
         scene, 
         NameComponent(name), 
-        Transform2D(position, rotation, scale),
+        Transform(position, rotation, scale),
         CameraComponent(
             aspect = aspect, height = height, 
             o_near = orthographic_near, o_far = orthographic_far, 
@@ -126,7 +122,7 @@ end
 
 function recalculate_projection_view!(cam::Camera)
     cam[CameraComponent].projection_view = 
-        cam[Transform2D].T * cam[CameraComponent].projection
+        cam[Transform].transform * cam[CameraComponent].projection
     nothing
 end
 
@@ -154,25 +150,19 @@ end
 
 
 # Transformations
-
-function transform!(c::Camera; kwargs...)
-    # We do not want to trigger an update during System
-    c[Transform2D] = Transform2D(c[Transform2D]; kwargs..., has_changed=false)
-    recalculate_projection_view!(c)
-    nothing
-end
-
-moveto!(c::Camera, pos::Vec3f0) = transform!(c, position = pos)
-rotateto!(c::Camera, θ::Float32) = transform!(c, position = θ)
+moveto!(c::Camera, pos::Vec3f0) = c[Transform].translation = pos
+rotateto!(c::Camera, θ::Float32) = c[Transform].rotation = Vec3f0(0, 0, θ)
+rotateto!(c::Camera, rot::Vec3f0) = c[Transform].rotation = rot
 scaleto!(c::Camera, scale::Vec2f0) = transform!(c, position = scale)
 
-position(c::Camera) = c[Transform2D].position
-rotation(c::Camera) = c[Transform2D].rotation
-scale(c::Camera) = c[Transform2D].scale
+translation(c::Camera) = c[Transform].translation
+rotation(c::Camera) = c[Transform].rotation
+scale(c::Camera) = c[Transform].scale
 
-moveby!(c::Camera, v::Vec3f0) = transform!(c, position = position(c) .+ v)
-rotateby!(c::Camera, θ::Float32) = transform!(c, rotation = rotation(c) + θ)
-scaleby!(c::Camera, s::Vec2f0) = transform!(c, scale = scale(c) .+ s)
+moveby!(c::Camera, v::Vec3f0) = moveto!(c, translation(c) .+ v)
+rotateby!(c::Camera, θ::Float32) = rotateto!(c, rotation(c)[3] + θ)
+rotateby!(c::Camera, rot::Vec3f0) = rotateto!(c, rotation(c) .+ rot)
+scaleby!(c::Camera, s::Vec2f0) = scaleto!(c, scale(c) .+ s)
 
 
 
@@ -184,9 +174,9 @@ scaleby!(c::Camera, s::Vec2f0) = transform!(c, scale = scale(c) .+ s)
 
 struct CameraUpdate <: System end
 
-requested_components(::CameraUpdate) = (Transform2D, CameraComponent)
+requested_components(::CameraUpdate) = (Transform, CameraComponent)
 function update!(app, ::CameraUpdate, reg::AbstractLedger, ts)
-    transforms = reg[Transform2D]
+    transforms = reg[Transform]
     cameras = reg[CameraComponent]
 
     for e in @entities_in(transforms && cameras)
@@ -194,8 +184,8 @@ function update!(app, ::CameraUpdate, reg::AbstractLedger, ts)
             T = transforms[e]
             C = cameras[e]
             if T.has_changed || C.has_changed
-                C.projection_view = T.T * C.projection
-                transforms[e] = Transform2D(T, has_changed=false)
+                C.projection_view = T.transform * C.projection
+                T.has_changed = false
                 C.has_changed = false
             end
         end

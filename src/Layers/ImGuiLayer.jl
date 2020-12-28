@@ -35,11 +35,9 @@ end
 end
 
 @HZ_profile update!(app, l::ImGuiLayer, other, ts) = nothing
-@HZ_profile function update!(app, l::ImGuiLayer, other::ImGuiLayer, ts)
-    True = true
-    CImGui.@c CImGui.ShowDemoWindow(&True)
-    nothing
-end
+# @HZ_profile function update!(app, l::ImGuiLayer, other::ImGuiLayer, ts)
+#     nothing
+# end
 
 @HZ_profile function End(l::ImGuiLayer)
     CImGui.Render()
