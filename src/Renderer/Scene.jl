@@ -1,6 +1,7 @@
 abstract type AbstractScene end
 
 struct Scene <: AbstractScene
+    viewport_size::Vector{Int}
     registry::Overseer.Ledger
     blank_texture::Texture2D
 end
@@ -69,7 +70,7 @@ end
 ################################################################################
 
 
-Base.delete!(scene::Scene, e::AbstractEntity) = delete!(scene.registry, entity(e))
+Base.delete!(scene::Scene, e::AbstractEntity) = delete!(scene.registry, RawEntity(e))
 function Overseer.schedule_delete!(s::Scene, e::AbstractEntity)
     Overseer.schedule_delete!(s.registry, entity(e))
 end

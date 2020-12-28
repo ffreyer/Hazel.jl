@@ -5,31 +5,67 @@ using CImGui.CSyntax.CStatic
 
 mutable struct SceneHierarchyPanel
     scene::Scene
-    selected::Hazel.Entity
+    selected::Union{Nothing, Hazel.Entity}
 
-    SceneHierarchyPanel(scene::Scene) = new(scene)
+    SceneHierarchyPanel(scene::Scene) = new(scene, nothing)
 end
 
 context!(p::SceneHierarchyPanel, s::Scene) = p.scene = s
+
+
 
 @HZ_profile function render!(p::SceneHierarchyPanel)
     CImGui.Begin("Scene Hierarchy")
     reg = Hazel.registry(p.scene)
     for e in entities(reg)
+        e == Hazel.Overseer.EMPTY_ENTITY && continue
         entity = Hazel.Entity(p.scene, e)
         draw_entity_node!(p, entity)
     end
 
     # We can't do this the way we have the struct, right?
-    # if CImGui.IsMouseDown(0) && CImGui.IsWindowHovered()
-    #     p.selected = nothing
-    # end
+    if CImGui.IsMouseDown(0) && CImGui.IsWindowHovered()
+        p.selected = nothing
+    end
+
+    # Right click on blank space
+    # CImGui.ImGuiPopupFlags_
+    if CImGui.BeginPopupContextWindow(C_NULL, 
+            CImGui.ImGuiPopupFlags_NoOpenOverItems |
+            CImGui.ImGuiPopupFlags_MouseButtonRight
+        )
+        if CImGui.MenuItem("Create Empty Entity")
+            Hazel.Entity(p.scene, Hazel.NameComponent("New Entity"), Hazel.Transform())
+        end
+        CImGui.EndPopup()
+    end
     CImGui.End()
 
     CImGui.Begin("Properties")
-    isdefined(p, :selected) && draw_components!(p.selected)
+    if p.selected !== nothing
+        draw_components!(p.selected)
+
+        CImGui.Button("Add Component") && CImGui.OpenPopup("AddComponent")
+        if CImGui.BeginPopup("AddComponent")
+            if CImGui.MenuItem("Camera")
+                push!(p.selected, Hazel.CameraComponent())
+                CImGui.CloseCurrentPopup()
+            end
+            if CImGui.MenuItem("Quad")
+                t = p.selected[Hazel.Transform]
+                push!(p.selected, Hazel.QuadVertices(t))
+                push!(p.selected, Hazel.ColorComponent(Vec4f0(1,0,1,1)))
+                push!(p.selected, Hazel.SimpleTexture(Hazel.blank_texture(p.scene)))
+                push!(p.selected, Hazel.TilingFactor(1f0))
+                push!(p.selected, Hazel.IsVisible(true))
+                CImGui.CloseCurrentPopup()
+            end
+        end
+    end
     CImGui.End()
 end
+
+
 
 function draw_entity_node!(p::SceneHierarchyPanel, entity::Hazel.Entity)
     if !haskey(entity, NameComponent)
@@ -46,18 +82,37 @@ function draw_entity_node!(p::SceneHierarchyPanel, entity::Hazel.Entity)
     )
 
     CImGui.IsItemClicked() && (p.selected = entity)
+
+    should_delete = false
+    if CImGui.BeginPopupContextItem()
+        should_delete = CImGui.MenuItem("Delete Entity")
+        CImGui.EndPopup()
+    end
+
     if opened
-        CImGui.TreePop()
+        flags = CImGui.ImGuiTreeNodeFlags_OpenOnArrow
         opened = CImGui.TreeNodeEx(
-            Ptr{Cvoid}(Hazel.RawEntity(entity).id + UInt32(1000000)), flags, "xD"
+            Ptr{Cvoid}(Hazel.RawEntity(entity).id + UInt32(1000000)), flags, 
+            entity[NameComponent].name
         )
         if opened
             CImGui.TreePop()
         end
+        CImGui.TreePop()
+    end
+
+    if should_delete
+        if p.selected == entity
+            p.selected = nothing
+        end
+        Hazel.delete!(entity)
     end
     nothing
 end
 
+
+
+# wraps a begin ... end block in a TreeNode and check if the component is available
 macro componentUI(component, name, code)
     esc(quote
         if haskey(entity, $component)
@@ -72,7 +127,8 @@ end
 function draw_components!(entity::Hazel.Entity)
     # TODO
     # Would be nice to have buffer and position as static things
-    flags = CImGui.ImGuiTreeNodeFlags_DefaultOpen
+    flags = CImGui.ImGuiTreeNodeFlags_DefaultOpen |
+            CImGui.ImGuiTreeNodeFlags_AllowItemOverlap
 
     if haskey(entity, NameComponent)
         name = string(entity[NameComponent])
@@ -97,7 +153,6 @@ function draw_components!(entity::Hazel.Entity)
         if draw_vec3_control("Scale", scale, 1f0)
             t.scale = Vec3f0(scale)
         end
-        CImGui.TreePop()
     end
 
     @componentUI Hazel.CameraComponent "Transform 2D" begin
@@ -138,21 +193,43 @@ function draw_components!(entity::Hazel.Entity)
             far = Ref(cam.p_far)
             CImGui.DragFloat("Far clip", far) && (cam.p_far = far[])
         end
-        CImGui.TreePop()
     end
 
-    @componentUI Hazel.QuadVertices "Sprite Renderer" begin
-        tex = entity[Hazel.SimpleTexture]
-        buffer = tex.texture.path * "\0"^256
-        if CImGui.InputText("Texture path", buffer, length(buffer))
-            #entity[NameComponent] = NameComponent(strip(buffer, '\0'))
-        end
-        color = Vector(entity[Hazel.ColorComponent].color)
-        if CImGui.ColorEdit4("Color", color)
-            entity[Hazel.ColorComponent] = Hazel.ColorComponent(Vec4f0(color))
-        end
-    end
+    if haskey(entity, Hazel.QuadVertices)
+        open = CImGui.TreeNodeEx(Ptr{Cvoid}(hash(Hazel.QuadVertices)), flags, "Sprite Renderer")
+        
+        CImGui.PushStyleVar(CImGui.ImGuiStyleVar_FramePadding, CImGui.ImVec2(4,4))
+        CImGui.SameLine(CImGui.GetWindowWidth() - 25f0)
+        CImGui.Button("+", CImGui.ImVec2(20,20)) && CImGui.OpenPopup("ComponentSettings")
 
+        remove = false
+        if CImGui.BeginPopup("ComponentSettings")
+            if CImGui.MenuItem("Remove Component")
+                remove = true
+            end
+            CImGui.EndPopup()
+        end
+        CImGui.PopStyleVar()
+
+        if open
+            tex = entity[Hazel.SimpleTexture]
+            buffer = tex.texture.path * "\0"^256
+            if CImGui.InputText("Texture path", buffer, length(buffer))
+                #entity[NameComponent] = NameComponent(strip(buffer, '\0'))
+            end
+            color = Vector(entity[Hazel.ColorComponent].color)
+            if CImGui.ColorEdit4("Color", color)
+                entity[Hazel.ColorComponent] = Hazel.ColorComponent(Vec4f0(color))
+            end
+            CImGui.TreePop()
+        end
+
+        if remove
+            delete!(entity, Hazel.SimpleTexture)
+            delete!(entity, Hazel.ColorComponent)
+            delete!(entity, Hazel.QuadVertices)
+        end
+    end 
     nothing
 end
 
@@ -212,8 +289,10 @@ function draw_vec3_control(label, values, reset=0f0, columnwidth=100f0)
     CImGui.SameLine()
     changed = CImGui.DragFloat("##Z", z, 0.1f0) || changed
 
+    CImGui.PopItemWidth()
     CImGui.PopStyleVar()
     CImGui.Columns(1)
+    CImGui.PopID()
 
     if changed
         values[1] = x[]

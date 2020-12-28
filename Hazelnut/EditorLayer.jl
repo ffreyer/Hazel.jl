@@ -48,7 +48,6 @@ function EditorLayer()
 
     camera = Camera(scene, name = "Orthographic Camera")
     script = ScriptComponent(
-        create! = (e) -> moveto!(Camera(e), Vec3f0(randn(), randn(), 0f0)),
         update! = (app, entity, ts) -> begin
             offset = -Hazel.delta(ts) * Vec3f0(
                 keypressed(app, Hazel.KEY_D) - keypressed(app, Hazel.KEY_A),
