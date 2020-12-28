@@ -43,24 +43,7 @@ context!(p::SceneHierarchyPanel, s::Scene) = p.scene = s
 
     CImGui.Begin("Properties")
     if p.selected !== nothing
-        draw_components!(p.selected)
-
-        CImGui.Button("Add Component") && CImGui.OpenPopup("AddComponent")
-        if CImGui.BeginPopup("AddComponent")
-            if CImGui.MenuItem("Camera")
-                push!(p.selected, Hazel.CameraComponent())
-                CImGui.CloseCurrentPopup()
-            end
-            if CImGui.MenuItem("Quad")
-                t = p.selected[Hazel.Transform]
-                push!(p.selected, Hazel.QuadVertices(t))
-                push!(p.selected, Hazel.ColorComponent(Vec4f0(1,0,1,1)))
-                push!(p.selected, Hazel.SimpleTexture(Hazel.blank_texture(p.scene)))
-                push!(p.selected, Hazel.TilingFactor(1f0))
-                push!(p.selected, Hazel.IsVisible(true))
-                CImGui.CloseCurrentPopup()
-            end
-        end
+        draw_components!(p, p.selected)
     end
     CImGui.End()
 end
@@ -75,7 +58,8 @@ function draw_entity_node!(p::SceneHierarchyPanel, entity::Hazel.Entity)
     
     flags = if isdefined(p, :selected) && (p.selected == entity)
         CImGui.ImGuiTreeNodeFlags_Selected else 0 end |
-        CImGui.ImGuiTreeNodeFlags_OpenOnArrow
+        CImGui.ImGuiTreeNodeFlags_OpenOnArrow |
+        CImGui.ImGuiTreeNodeFlags_SpanAvailWidth
 
     opened = CImGui.TreeNodeEx(
         Ptr{Cvoid}(Hazel.RawEntity(entity).id), flags, string(entity[NameComponent])
@@ -113,30 +97,79 @@ end
 
 
 # wraps a begin ... end block in a TreeNode and check if the component is available
-macro componentUI(component, name, code)
+macro componentUI(component, name, code, delete_block)
     esc(quote
         if haskey(entity, $component)
-            if CImGui.TreeNodeEx(Ptr{Cvoid}(hash($component)), flags, $name)
+            region = CImGui.GetContentRegionAvail()
+            CImGui.PushStyleVar(CImGui.ImGuiStyleVar_FramePadding, CImGui.ImVec2(4,4))
+            lineheight = CImGui.GetFontSize() + 8f0 #CImGui.ImGuiStyleVar_FramePadding.y * 2.0f0
+            CImGui.Separator()
+            open = CImGui.TreeNodeEx(Ptr{Cvoid}(hash($component)), flags, $name)
+            CImGui.PopStyleVar()
+            CImGui.SameLine(region.x - lineheight * 0.5f0)
+            if CImGui.Button("+", CImGui.ImVec2(lineheight, lineheight))
+                CImGui.OpenPopup("ComponentSettings")
+            end
+
+            remove = false
+            if CImGui.BeginPopup("ComponentSettings")
+                if CImGui.MenuItem("Remove Component")
+                    remove = true
+                end
+                CImGui.EndPopup()
+            end
+            # CImGui.PopStyleVar()
+
+            if open
                 $code
                 CImGui.TreePop()
+            end
+
+            if remove
+                $delete_block
             end
         end
     end)
 end
 
-function draw_components!(entity::Hazel.Entity)
+function draw_components!(p, entity::Hazel.Entity)
     # TODO
     # Would be nice to have buffer and position as static things
     flags = CImGui.ImGuiTreeNodeFlags_DefaultOpen |
-            CImGui.ImGuiTreeNodeFlags_AllowItemOverlap
+            CImGui.ImGuiTreeNodeFlags_AllowItemOverlap |
+            CImGui.ImGuiTreeNodeFlags_SpanAvailWidth |
+            CImGui.ImGuiTreeNodeFlags_Framed |
+            CImGui.ImGuiTreeNodeFlags_FramePadding
 
     if haskey(entity, NameComponent)
         name = string(entity[NameComponent])
         buffer = name * "\0"^256
-        if CImGui.InputText("Tag", buffer, length(buffer))
+        if CImGui.InputText("##Tag", buffer, length(buffer))
             entity[NameComponent] = NameComponent(strip(buffer, '\0'))
         end
     end
+
+
+    CImGui.SameLine()
+    CImGui.PushItemWidth(-1)
+    CImGui.Button("Add Component") && CImGui.OpenPopup("AddComponent")
+    if CImGui.BeginPopup("AddComponent")
+        if CImGui.MenuItem("Camera")
+            push!(p.selected, Hazel.CameraComponent())
+            CImGui.CloseCurrentPopup()
+        end
+        if CImGui.MenuItem("Quad")
+            t = p.selected[Hazel.Transform]
+            push!(p.selected, Hazel.QuadVertices(t))
+            push!(p.selected, Hazel.ColorComponent(Vec4f0(1,0,1,1)))
+            push!(p.selected, Hazel.SimpleTexture(Hazel.blank_texture(p.scene)))
+            push!(p.selected, Hazel.TilingFactor(1f0))
+            push!(p.selected, Hazel.IsVisible(true))
+            CImGui.CloseCurrentPopup()
+        end
+        CImGui.EndPopup()
+    end
+    CImGui.PopItemWidth()
 
 
     @componentUI Hazel.Transform "Transform" begin
@@ -153,9 +186,12 @@ function draw_components!(entity::Hazel.Entity)
         if draw_vec3_control("Scale", scale, 1f0)
             t.scale = Vec3f0(scale)
         end
+    end begin
+        delete!(entity, Hazel.Transform)
     end
 
-    @componentUI Hazel.CameraComponent "Transform 2D" begin
+
+    @componentUI Hazel.CameraComponent "Camera" begin
         cam = entity[Hazel.CameraComponent]
 
         active = Ref(cam.active)
@@ -193,43 +229,27 @@ function draw_components!(entity::Hazel.Entity)
             far = Ref(cam.p_far)
             CImGui.DragFloat("Far clip", far) && (cam.p_far = far[])
         end
+    end begin
+        delete!(entity, Hazel.CameraComponent)
     end
 
-    if haskey(entity, Hazel.QuadVertices)
-        open = CImGui.TreeNodeEx(Ptr{Cvoid}(hash(Hazel.QuadVertices)), flags, "Sprite Renderer")
-        
-        CImGui.PushStyleVar(CImGui.ImGuiStyleVar_FramePadding, CImGui.ImVec2(4,4))
-        CImGui.SameLine(CImGui.GetWindowWidth() - 25f0)
-        CImGui.Button("+", CImGui.ImVec2(20,20)) && CImGui.OpenPopup("ComponentSettings")
 
-        remove = false
-        if CImGui.BeginPopup("ComponentSettings")
-            if CImGui.MenuItem("Remove Component")
-                remove = true
-            end
-            CImGui.EndPopup()
+    @componentUI Hazel.QuadVertices "Sprite Renderer" begin
+        tex = entity[Hazel.SimpleTexture]
+        buffer = tex.texture.path * "\0"^256
+        if CImGui.InputText("Texture path", buffer, length(buffer))
+            #entity[NameComponent] = NameComponent(strip(buffer, '\0'))
+            @info "TODO"
         end
-        CImGui.PopStyleVar()
-
-        if open
-            tex = entity[Hazel.SimpleTexture]
-            buffer = tex.texture.path * "\0"^256
-            if CImGui.InputText("Texture path", buffer, length(buffer))
-                #entity[NameComponent] = NameComponent(strip(buffer, '\0'))
-            end
-            color = Vector(entity[Hazel.ColorComponent].color)
-            if CImGui.ColorEdit4("Color", color)
-                entity[Hazel.ColorComponent] = Hazel.ColorComponent(Vec4f0(color))
-            end
-            CImGui.TreePop()
+        color = Vector(entity[Hazel.ColorComponent].color)
+        if CImGui.ColorEdit4("Color", color)
+            entity[Hazel.ColorComponent] = Hazel.ColorComponent(Vec4f0(color))
         end
-
-        if remove
-            delete!(entity, Hazel.SimpleTexture)
-            delete!(entity, Hazel.ColorComponent)
-            delete!(entity, Hazel.QuadVertices)
-        end
-    end 
+    end begin
+        delete!(entity, Hazel.SimpleTexture)
+        delete!(entity, Hazel.ColorComponent)
+        delete!(entity, Hazel.QuadVertices)
+    end
     nothing
 end
 

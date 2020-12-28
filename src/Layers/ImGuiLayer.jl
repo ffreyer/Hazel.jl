@@ -6,9 +6,49 @@ mutable struct ImGuiLayer <: AbstractLayer
 end
 
 
+function set_dark_theme()
+    colors = CImGui.GetStyle().Colors
+    colors[CImGui.ImGuiCol_WindowBg] = CImGui.ImVec4(0.1f, 0.105f, 0.11f, 1.0f)
+
+    # Headers
+    colors[CImGui.ImGuiCol_Header] = CImGui.ImVec4(0.2f, 0.205f, 0.21f, 1.0f)
+    colors[CImGui.ImGuiCol_HeaderHovered] = CImGui.ImVec4(0.3f, 0.305f, 0.31f, 1.0f)
+    colors[CImGui.ImGuiCol_HeaderActive] = CImGui.ImVec4(0.15f, 0.1505f, 0.151f, 1.0f)
+    
+    # Buttons
+    colors[CImGui.ImGuiCol_Button] = CImGui.ImVec4(0.2f, 0.205f, 0.21f, 1.0f)
+    colors[CImGui.ImGuiCol_ButtonHovered] = CImGui.ImVec4(0.3f, 0.305f, 0.31f, 1.0f)
+    colors[CImGui.ImGuiCol_ButtonActive] = CImGui.ImVec4(0.15f, 0.1505f, 0.151f, 1.0f)
+
+    # Frame BG
+    colors[CImGui.ImGuiCol_FrameBg] = CImGui.ImVec4(0.2f, 0.205f, 0.21f, 1.0f)
+    colors[CImGui.ImGuiCol_FrameBgHovered] = CImGui.ImVec4(0.3f, 0.305f, 0.31f, 1.0f)
+    colors[CImGui.ImGuiCol_FrameBgActive] = CImGui.ImVec4(0.15f, 0.1505f, 0.151f, 1.0f)
+
+    # Tabs
+    colors[CImGui.ImGuiCol_Tab] = CImGui.ImVec4(0.15f, 0.1505f, 0.151f, 1.0f)
+    colors[CImGui.ImGuiCol_TabHovered] = CImGui.ImVec4(0.38f, 0.3805f, 0.381f, 1.0f)
+    colors[CImGui.ImGuiCol_TabActive] = CImGui.ImVec4(0.28f, 0.2805f, 0.281f, 1.0f)
+    colors[CImGui.ImGuiCol_TabUnfocused] = CImGui.ImVec4(0.15f, 0.1505f, 0.151f, 1.0f)
+    colors[CImGui.ImGuiCol_TabUnfocusedActive] = CImGui.ImVec4(0.2f, 0.205f, 0.21f, 1.0f)
+
+    # Title
+    colors[CImGui.ImGuiCol_TitleBg] = CImGui.ImVec4(0.15f, 0.1505f, 0.151f, 1.0f)
+    colors[CImGui.ImGuiCol_TitleBgActive] = CImGui.ImVec4(0.15f, 0.1505f, 0.151f, 1.0f)
+    colors[CImGui.ImGuiCol_TitleBgCollapsed] = CImGui.ImVec4(0.15f, 0.1505f, 0.151f, 1.0f)
+end
+
+
 # Interface
 function attach(l::ImGuiLayer, app::AbstractApplication)
     l.context = CImGui.CreateContext()
+    # IDK
+    # io = CImGui.GetIO()
+    # fonts = io.Fonts
+    # CImGui.AddFontDefault(fonts)
+    # CImGui.AddFontFromFileTTF(fonts, "assets/fonts/Open Sans/OpenSans-Regular.ttf", 18)
+    # CImGui.AddFontFromFileTTF(fonts, "assets/fonts/Open Sans/OpenSans-Bold.ttf", 18)#
+
     CImGui.StyleColorsDark()
     glfw_window = native_window(window(app))
     l.glfw_window = glfw_window
@@ -16,6 +56,8 @@ function attach(l::ImGuiLayer, app::AbstractApplication)
     CImGui.GLFWBackend.ImGui_ImplGlfw_InitForOpenGL(glfw_window, false)
     CImGui.OpenGLBackend.ImGui_ImplOpenGL3_Init(410)
     GLFW.SetCharCallback(glfw_window, CImGui.GLFWBackend.ImGui_ImplGlfw_CharCallback)
+
+    # set_dark_theme()
 
     nothing
 end

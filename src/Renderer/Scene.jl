@@ -1,7 +1,6 @@
 abstract type AbstractScene end
 
 struct Scene <: AbstractScene
-    viewport_size::Vector{Int}
     registry::Overseer.Ledger
     blank_texture::Texture2D
 end
