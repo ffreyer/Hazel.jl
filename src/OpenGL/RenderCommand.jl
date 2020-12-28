@@ -26,7 +26,7 @@ end
 
 Clears the screen with a specific `color`.
 """
-clear(color::Colorant) = clear(r, RGBA(color))
+clear(color::Colorant) = clear(RGBA(color))
 @HZ_profile function clear(color::RGBA = RGBA(0.1, 0.1, 0.1, 1.0))
     glClearColor(color.r, color.g , color.b, color.alpha)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)

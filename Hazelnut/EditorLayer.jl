@@ -34,7 +34,34 @@ function EditorLayer()
     ), Nx=20, Ny=13)
 
     scene = Scene()
-    
+
+    quad = addQuad!(scene, 
+        position = Vec3f0(0, 0, 0.1), 
+        color = Vec4f0(1, 0.5, 0.5, 1), 
+        name = "Red Square"
+    )
+    addQuad!(scene, 
+        position = Vec3f0(0, 0.1, 0.05), 
+        color = Vec4f0(0.5, 1.0, 0.5, 1), 
+        name = "Green Square"
+    )
+
+    camera = Camera(scene, name = "Orthographic Camera")
+    script = ScriptComponent(
+        create! = (e) -> moveto!(Camera(e), Vec3f0(randn(), randn(), 0f0)),
+        update! = (app, entity, ts) -> begin
+            offset = -Hazel.delta(ts) * Vec3f0(
+                keypressed(app, Hazel.KEY_D) - keypressed(app, Hazel.KEY_A),
+                keypressed(app, Hazel.KEY_W) - keypressed(app, Hazel.KEY_S),
+                0
+            )
+            moveby!(Camera(entity), offset)
+        end
+    )
+    push!(camera, script)
+    camera2 = Camera(scene, name = "Clip Space Camera", height = 2f0)
+    activate!(camera)
+
     tilemap = string2map("""
     WWWW WWWW WWWW WWWW WWWW WWWW
     WWWW WWWW WWWW WWWW WWWW WWWW
@@ -56,23 +83,6 @@ function EditorLayer()
     for i in 1:size(tilemap, 1), j in 1:size(tilemap, 2)
         addQuad!(scene, position = Vec3f0(i-12, j-7, 0), texture = tilemap[i, j])
     end
-    quad = addQuad!(scene, position = Vec3f0(0, 0, 0.1), color=Vec4f0(1, 0.5, 0.5, 1), name = "Colored Square")
-
-    camera = Camera(scene, name = "Orthographic Camera")
-    script = ScriptComponent(
-        create! = (e) -> moveto!(Camera(e), Vec3f0(randn(), randn(), 0f0)),
-        update! = (app, entity, ts) -> begin
-            offset = Hazel.delta(ts) * Vec3f0(
-                keypressed(app, Hazel.KEY_D) - keypressed(app, Hazel.KEY_A),
-                keypressed(app, Hazel.KEY_W) - keypressed(app, Hazel.KEY_S),
-                0
-            )
-            moveby!(Camera(entity), offset)
-        end
-    )
-    push!(camera, script)
-    camera2 = Camera(scene, name = "Clip Space Camera", height = 2f0)
-    activate!(camera)
 
     push!(scene, Hazel.Stage(:PreRender, [Hazel.RunScript(), Hazel.CameraUpdate()]))
     addBatchRenderingStage!(scene)
@@ -154,14 +164,6 @@ end
     CImGui.Image(Ptr{Cvoid}(Int(sl.framebuffer[].t_id)), window_size, (0, 1), (1, 0))
     CImGui.End()
     CImGui.PopStyleVar()
-
-    CImGui.Begin("Color Picker")
-    CImGui.ColorEdit4("Square color", sl.color)
-    setcolor!(sl.quad, Vec4f0(sl.color))
-
-    CImGui.Checkbox("Use orthographic camera", sl.active_primary_camera)
-    activate!(sl.active_primary_camera[] ? sl.camera : sl.camera2)
-    CImGui.End()
 
     render!(sl.p)
 

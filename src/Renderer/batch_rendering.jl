@@ -48,7 +48,8 @@ function addQuad!(
     )
     transform = Transform2D(position, rotation, size)
     e = Entity(scene,
-        transform, QuadVertices(transform, uv),
+        transform, 
+        QuadVertices(transform, uv),
         ColorComponent(color),
         SimpleTexture(texture),
         TilingFactor(tilingfactor),

@@ -1,4 +1,4 @@
-include("Camera/Camera.jl")
+# include("Camera/Camera.jl")
 
 # "high"-level Renderer implementation
 include("SubTexture2D.jl")

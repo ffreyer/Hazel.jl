@@ -55,9 +55,9 @@ Base.push!(scene::Scene, stage::Stage) = push!(scene.registry, stage)
 
 
 function resize_viewport!(scene::Scene, w, h)
-    ops = scene[OrthographicProjection]
-    for e in @entities_in(ops)
-        ops[e] = OrthographicProjection(ops[e], aspect = Float32(w/h))
+    ccs = scene[CameraComponent]
+    for e in @entities_in(ccs)
+        ccs[e].aspect = Float32(w/h)
     end
     nothing
 end

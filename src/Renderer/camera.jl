@@ -5,34 +5,71 @@
 
 # Transform2D takes the role of the view matrix
 
-# This is the projection matrix
-@component struct OrthographicProjection
+# Merge these into one, so we can switch between ortho and perspective easily
+
+@enum ProjectionType Orthographic=1 Perspective=2
+
+@component mutable struct CameraComponent
+    # Orthographic
     aspect::Float32
     height::Float32
-    near::Float32
-    far::Float32
+    o_near::Float32
+    o_far::Float32
 
-    projection::Mat4f0
+    # Perspective
+    fov::Float32
+    p_near::Float32
+    p_far::Float32
+    
+    projection_type::ProjectionType
     has_changed::Bool # maybe unneeded?
-
-    function OrthographicProjection(
-            aspect = 16f0/9f0, height = 10f0,
-            near = -1f0, far = 1f0,
-            projection = orthographicprojection(aspect, height, near, far),
-            has_changed = false
-        )
-        new(aspect, height, near, far, projection, has_changed)
-    end
+    fix_aspect_ratio::Bool
+    active::Bool
+    
+    projection::Mat4f0
+    projection_view::Mat4f0
 end
 
-function OrthographicProjection(
-        p::OrthographicProjection;
-        aspect = p.aspect, height = p.height,
-        near = p.near, far = p.far,
-        projection = orthographicprojection(aspect, height, near, far),
-        has_changed = true
+function CameraComponent(;
+        aspect = 16f0/9f0, height = 10f0, o_near = -1f0, o_far = 1f0,
+        fov = 45, p_near = 1f-2, p_far = 1f4,
+        projection_type = Orthographic, fix_aspect_ratio = false, active = true, 
+        has_changed = false,
+        projection = if projection_type === Orthographic
+            orthographicprojection(aspect, height, o_near, o_far)
+        else
+            perspectiveprojection(cc.fov, aspect, p_near, p_far)
+        end,
+        projection_view = Mat4f0(I)
     )
-    OrthographicProjection(aspect, height, near, far, projection, has_changed)
+    CameraComponent(
+        aspect, height, o_near, o_far,
+        fov, p_near, p_far, 
+        projection_type, has_changed, fix_aspect_ratio, active,
+        projection, projection_view
+    )
+end
+
+# Maybe?
+function Base.setproperty!(cc::CameraComponent, field::Symbol, value)
+    if field in (:aspect, :height, :o_near, :o_far, :p_near, :p_far, :fov, :projection_type)
+        setfield!(cc, :has_changed, true)
+        projection!(cc)
+    end
+    setfield!(cc, field, value)    
+end
+
+function projection!(cc::CameraComponent)
+    cc.projection = if cc.projection_type === Orthographic
+        left    = -0.5 * cc.aspect * cc.height
+        right   = +0.5 * cc.aspect * cc.height
+        bottom  = -0.5 * cc.height
+        top     = +0.5 * cc.height
+        orthographicprojection(left, right, bottom, top, cc.o_near, cc.o_far)
+    else
+        perspectiveprojection(cc.fov, cc.aspect, cc.p_near, cc.p_far)
+    end
+    nothing
 end
 
 function orthographicprojection(
@@ -44,20 +81,6 @@ function orthographicprojection(
     top     = +0.5height
     orthographicprojection(left, right, bottom, top, near, far)
 end
-
-# This is extra information
-@component mutable struct CameraComponent
-    projection_view::Mat4f0
-    fix_aspect_ratio::Bool
-    active::Bool
-
-    function CameraComponent(
-            fix_aspect_ratio=false, active=true, projection_view = Mat4f0(I)
-        )
-        new(projection_view, fix_aspect_ratio, active)
-    end
-end
-
 
 
 ################################################################################
@@ -76,15 +99,20 @@ function Camera(
         name = "Unnamed Camera",
         position = Vec3f0(0), rotation = 0f0, scale = Vec2f0(1),
         height = 10f0, width = height * 16f0/9f0, aspect = width/height,
-        near = -1f0, far = 1f0,
+        orthographic_near = -1f0, orthographic_far = 1f0,
+        fov = 45, perspective_near = 0f0, perspective_far = 1f4,
         fix_aspect_ratio = false, active = true
     )
     we = Entity(
         scene, 
         NameComponent(name), 
         Transform2D(position, rotation, scale),
-        OrthographicProjection(aspect, height, near, far),
-        CameraComponent(fix_aspect_ratio, active),
+        CameraComponent(
+            aspect = aspect, height = height, 
+            o_near = orthographic_near, o_far = orthographic_far, 
+            fov = fov, p_near = perspective_near, p_far = perspective_far,
+            fix_aspect_ratio = fix_aspect_ratio, active = active
+        ),
         components...
     )
     cam = Camera(we)
@@ -98,7 +126,7 @@ end
 
 function recalculate_projection_view!(cam::Camera)
     cam[CameraComponent].projection_view = 
-        cam[Transform2D].T * cam[OrthographicProjection].projection
+        cam[Transform2D].T * cam[CameraComponent].projection
     nothing
 end
 
@@ -106,7 +134,7 @@ end
 # Frontend
 
 
-function activate!(c::Camera)
+function activate!(c::AbstractEntity)
     cameras = registry(c)[CameraComponent]
     for e in @entities_in(cameras)
         should_be_active = e == RawEntity(c)
@@ -117,11 +145,11 @@ function activate!(c::Camera)
     nothing
 end
 
-function orthographic!(c::Camera; kwargs...)
-    c[OrthographicProjection] = OrthographicProjection(
-        c[OrthographicProjection]; kwargs...
-    )
-    recalculate_projection_view!(c)
+function orthographic!(cam::Camera)
+    cc = cam[CameraComponent]
+    cc.projection_type = Orthographic
+    projection!(cc)
+    recalculate_projection_view!(cam)
 end
 
 
@@ -153,22 +181,22 @@ scaleby!(c::Camera, s::Vec2f0) = transform!(c, scale = scale(c) .+ s)
 ################################################################################
 
 
+
 struct CameraUpdate <: System end
 
-requested_components(::CameraUpdate) = (Transform2D, OrthographicProjection, CameraComponent)
+requested_components(::CameraUpdate) = (Transform2D, CameraComponent)
 function update!(app, ::CameraUpdate, reg::AbstractLedger, ts)
     transforms = reg[Transform2D]
-    projections = reg[OrthographicProjection]
     cameras = reg[CameraComponent]
 
-    for e in @entities_in(transforms && projections && cameras)
+    for e in @entities_in(transforms && cameras)
         if cameras[e].active
             T = transforms[e]
-            P = projections[e]
-            if T.has_changed || P.has_changed
-                cameras[e].projection_view = T.T * P.projection
+            C = cameras[e]
+            if T.has_changed || C.has_changed
+                C.projection_view = T.T * C.projection
                 transforms[e] = Transform2D(T, has_changed=false)
-                projections[e] = OrthographicProjection(P, has_changed=false)
+                C.has_changed = false
             end
         end
     end
