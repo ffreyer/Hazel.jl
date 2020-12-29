@@ -61,3 +61,16 @@ Base.:(==)(e1::AbstractEntity, e2::AbstractEntity) = RawEntity(e1) == RawEntity(
 @inline entity(e::WrappedEntity) = e.entity
 @inline registry(e::WrappedEntity) = registry(entity(e))
 @inline RawEntity(e::WrappedEntity) = RawEntity(entity(e))
+
+
+# Iteration
+# i.e. for component in entity
+function Base.iterate(e::AbstractEntity, state = (registry(e)[RawEntity(e)], 1))
+    components, idx = state
+    if idx ≤ length(components)
+        @inbounds return (components[idx], (components, idx+1))
+    else
+        return nothing
+    end
+end
+Base.length(e::AbstractEntity) = length(registry(e)[RawEntity(e)])

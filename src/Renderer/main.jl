@@ -17,6 +17,8 @@ include("camera.jl")
 # batch rendering - Quad entity, components and systems
 include("batch_rendering.jl")
 
+include("serialization.jl")
+
 # old
 # include("Scene.jl")
 # include("Renderer/Renderer.jl")

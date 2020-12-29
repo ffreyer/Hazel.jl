@@ -20,6 +20,15 @@ Base.setindex!(s::Scene, v, e::RawEntity) = s.registry[e] = v
 Base.getindex(s::Scene, e::RawEntity) = s.registry[e]
 Base.getindex(s::Scene, c::DataType) = s.registry[c]
 
+Overseer.components(scene::Scene)       = Overseer.components(registry(scene))
+Overseer.entities(scene::Scene)         = map(e -> Entity(scene, e), Overseer.entities(registry(scene)))
+Overseer.free_entities(scene::Scene)    = map(e -> Entity(scene, e), Overseer.free_entities(registry(scene)))
+Overseer.valid_entities(scene::Scene)   = map(e -> Entity(scene, e), Overseer.valid_entities(registry(scene)))
+Overseer.to_delete(scene::Scene)        = Overseer.to_delete(registry(scene))
+Overseer.stages(scene::Scene)           = Overseer.stages(registry(scene))
+Overseer.stage(scene::Scene, s::Symbol) = Overseer.stage(registry(scene), s)
+Overseer.groups(scene::Scene)           = Overseer.groups(registry(scene))
+
 @HZ_profile function update!(app, scene::Scene, ts)
     update!(app, scene.registry, ts)
 end
@@ -29,9 +38,7 @@ end
 
 Returns a 1x1 white Texture2D.
 """
-function blank_texture(scene::Scene)
-    scene.blank_texture
-end
+blank_texture(scene::Scene) = scene.blank_texture
 
 # This should all happen through finalizers I think
 # function destroy(scene::Scene)

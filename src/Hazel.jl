@@ -8,12 +8,13 @@ module Hazel
 
 abstract type AbstractApplication end
 
-# Maths
-using LinearAlgebra
+
+using LinearAlgebra, UUIDs
+
 using Reexport
 @reexport using GeometryBasics, Colors
 using StaticArrays, Quaternions
-using FileIO, ImageIO, FixedPointNumbers, ImageMagick # loading png files
+using FileIO, ImageIO, FixedPointNumbers, ImageMagick, YAML
 using TimerOutputs
 export print_timer, reset_timer!
 
