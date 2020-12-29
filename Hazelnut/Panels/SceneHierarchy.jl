@@ -160,11 +160,10 @@ function draw_components!(p, entity::Hazel.Entity)
         end
         if CImGui.MenuItem("Quad")
             t = p.selected[Hazel.Transform]
-            push!(p.selected, Hazel.QuadVertices(t))
-            push!(p.selected, Hazel.ColorComponent(Vec4f0(1,0,1,1)))
-            push!(p.selected, Hazel.SimpleTexture(Hazel.blank_texture(p.scene)))
-            push!(p.selected, Hazel.TilingFactor(1f0))
-            push!(p.selected, Hazel.IsVisible(true))
+            push!(
+                p.selected, 
+                Hazel.InstancedQuad(transform, Hazel.blank_texture(p.scene))
+            )
             CImGui.CloseCurrentPopup()
         end
         CImGui.EndPopup()
@@ -234,21 +233,29 @@ function draw_components!(p, entity::Hazel.Entity)
     end
 
 
-    @componentUI Hazel.QuadVertices "Sprite Renderer" begin
-        tex = entity[Hazel.SimpleTexture]
-        buffer = tex.texture.path * "\0"^256
+    # @componentUI Hazel.QuadVertices "Sprite Renderer" begin
+    @componentUI Hazel.InstancedQuad "Instanced Quad" begin
+        quad = entity[Hazel.InstancedQuad]
+
+        visible = Ref(quad.visible)
+        if CImGui.Checkbox("Visible", visible)
+            quad.visible = visible[]
+        end
+        color = Vector(quad.color)
+        if CImGui.ColorEdit4("Color", color)
+            quad.color = Vec4f0(color)
+        end
+        buffer = quad.texture.path * "\0"^256
         if CImGui.InputText("Texture path", buffer, length(buffer))
             #entity[NameComponent] = NameComponent(strip(buffer, '\0'))
             @info "TODO"
         end
-        color = Vector(entity[Hazel.ColorComponent].color)
-        if CImGui.ColorEdit4("Color", color)
-            entity[Hazel.ColorComponent] = Hazel.ColorComponent(Vec4f0(color))
+        tf = Ref(quad.tilingfactor)
+        if CImGui.DragFloat("Tiling Factor", tf, 0.05f0)
+            quad.tilingfactor = tf[]
         end
     end begin
-        delete!(entity, Hazel.SimpleTexture)
-        delete!(entity, Hazel.ColorComponent)
-        delete!(entity, Hazel.QuadVertices)
+        delete!(entity, Hazel.InstancedQuad)
     end
     nothing
 end

@@ -1,30 +1,45 @@
 @doc """
-    QuadVertices()
-    QuadVertices(transform[, uv])
-    QuadVertices(positions::NTuple{4, Vec3f0}, uv::LRBT{Float32})
+    InstancedQuad(transform, texture; kwargs...)
 
-Internal representation of a Quad. This is used to avoid re-computing positions
-of static Quads.
-""" QuadVertices
-@component struct QuadVertices
-    # for efficiency - needs to derived on Transform update
+Creates instanced quad component, i.e. a Quad that is part of the batch 
+rendering System. The `transform` is a transform component. (It is used to avoid
+recalculating positions of static Quads.)
+
+kwargs include:
+* `color`
+* `tilingfactor`
+* `visible`
+* `uv`
+""" InstancedQuad
+@component mutable struct InstancedQuad
     positions::NTuple{4, Vec3f0}
     uv::LRBT{Float32}
-end
-function QuadVertices()
-    QuadVertices((
-        Vec3f0(-0.5, -0.5, 0), Vec3f0( 0.5, -0.5, 0), 
-        Vec3f0(-0.5,  0.5, 0), Vec3f0( 0.5,  0.5, 0)
-    ), LRBT{Float32}(0, 1, 0, 1))
-end
-function QuadVertices(transform::Transform, uv = LRBT{Float32}(0, 1, 0, 1))
-    T = transform.transform
-    QuadVertices((
-        T * Vec4f0(-0.5, -0.5, 0, 1), T * Vec4f0( 0.5, -0.5, 0, 1), 
-        T * Vec4f0(-0.5,  0.5, 0, 1), T * Vec4f0( 0.5,  0.5, 0, 1)
-    ), uv)
+    tilingfactor::Float32
+    texture::Texture2D
+    color::Vec4f0
+    visible::Bool
 end
 
+function InstancedQuad(transform, texture::SubTexture; kwargs...)
+    InstancedQuad(transform, texture.texture; kwargs...)
+end
+function InstancedQuad(
+        transform::Transform, texture::Texture2D;
+        color = Vec4f0(1,1,1,1),
+        uv = LRBT{Float32}(0,1,0,1),
+        tilingfactor = 1f0,
+        visible = true
+    )
+    T = transform.transform
+    InstancedQuad(
+        (
+            T * Vec4f0(-0.5, -0.5, 0, 1), T * Vec4f0( 0.5, -0.5, 0, 1), 
+            T * Vec4f0(-0.5,  0.5, 0, 1), T * Vec4f0( 0.5,  0.5, 0, 1)
+        ), 
+        uv, tilingfactor,
+        texture, color, visible
+    )
+end
 
 
 ################################################################################
@@ -40,21 +55,15 @@ Quad(scene::Scene, e::RawEntity) = Quad(Entity(scene, e))
 
 # This generates a Quad entity
 function addQuad!(
-        scene::Scene, args...;
+        scene::Scene, args...; name::String = "Unnamed Quad",
         position = Vec3f0(0), size = Vec3f0(1), rotation = Vec3f0(0),
-        color::Vec4f0 = Vec4f0(1), texture = blank_texture(scene), 
-        tilingfactor::Float32 = 1f0, visible::Bool = true,
-        uv::LRBT = uv(texture), name::String = "Unnamed Quad"
+        texture = blank_texture(scene), uv::LRBT = uv(texture), kwargs...
     )
     transform = Transform(position, rotation, size)
     e = Entity(scene,
-        transform, 
-        QuadVertices(transform, uv),
-        ColorComponent(color),
-        SimpleTexture(texture),
-        TilingFactor(tilingfactor),
-        IsVisible(visible),
         NameComponent(name),
+        transform, 
+        InstancedQuad(transform, texture, uv = uv; kwargs...),
         args...
     )
     Quad(e)
@@ -76,10 +85,6 @@ struct QuadVertex
     uv::Vec2f0
     texture_index::Float32
     tilingfactor::Float32
-end
-
-function QuadVertex(p, c::ColorComponent, uv, ti, tf::TilingFactor)
-    QuadVertex(p, c.color, uv, ti, tf.tf)
 end
 
 
@@ -131,30 +136,25 @@ function BatchRenderer(;
     )
 end
 
-requested_components(::BatchRenderer) = (
-    SimpleTexture, ColorComponent, QuadVertices, IsVisible, TilingFactor
-)
+requested_components(::BatchRenderer) = (InstancedQuad,)
 
 function update!(app, br::BatchRenderer, reg::AbstractLedger, ts)
     # Find active camera
     cameras = reg[CameraComponent]
-    projection_view = zero(Mat4f0)
+    trg = nothing
     for e in @entities_in(cameras) # I think this just works?
         if cameras[e].active
-            projection_view = cameras[e].projection_view
+            trg = e
             break
         end
     end
-    projection_view == zero(Mat4f0) && return
+    trg === nothing && return
+    projection_view = cameras[trg].projection_view
 
 
 
     # Render
-    textures        = reg[SimpleTexture]
-    colors          = reg[ColorComponent]
-    quads           = reg[QuadVertices]
-    visibles        = reg[IsVisible]
-    tilingfactors   = reg[TilingFactor]
+    quads = reg[InstancedQuad]
 
     bind(br.shader)
     bind(br.va)
@@ -163,8 +163,9 @@ function update!(app, br::BatchRenderer, reg::AbstractLedger, ts)
     tb = br.texture_buffer
     vidx = 1
     tidx = 0
-    for e in @entities_in(textures && colors && quads && visibles && tilingfactors)
-        # visibles[e].val || continue
+    for e in @entities_in(quads)
+        quad = quads[e]
+        quad.visible || continue
 
         # Flush buffer (render) if full
         if vidx > br.max_quad_vertices
@@ -180,7 +181,7 @@ function update!(app, br::BatchRenderer, reg::AbstractLedger, ts)
         end
 
         # Maybe add texture, get texture index
-        tex = textures[e].texture
+        tex = quad.texture
         current_texture = 1
         while true
             if current_texture > tidx
@@ -193,21 +194,20 @@ function update!(app, br::BatchRenderer, reg::AbstractLedger, ts)
         end
 
         # Build each QuadVertex
-        c = colors[e]
-        tf = tilingfactors[e]
-        q = quads[e]
-        l,r,b,t = q.uv
-        vb[vidx]   = QuadVertex(q.positions[1], c, Vec2f0(l, b), current_texture-1, tf)
-        vb[vidx+1] = QuadVertex(q.positions[2], c, Vec2f0(r, b), current_texture-1, tf)
-        vb[vidx+2] = QuadVertex(q.positions[3], c, Vec2f0(l, t), current_texture-1, tf)
-        vb[vidx+3] = QuadVertex(q.positions[4], c, Vec2f0(r, t), current_texture-1, tf)
+        c = quad.color
+        tf = quad.tilingfactor
+        positions = quad.positions
+        l,r,b,t = quad.uv
+
+        vb[vidx]   = QuadVertex(positions[1], c, Vec2f0(l, b), current_texture-1, tf)
+        vb[vidx+1] = QuadVertex(positions[2], c, Vec2f0(r, b), current_texture-1, tf)
+        vb[vidx+2] = QuadVertex(positions[3], c, Vec2f0(l, t), current_texture-1, tf)
+        vb[vidx+3] = QuadVertex(positions[4], c, Vec2f0(r, t), current_texture-1, tf)
         vidx += 4
     end
 
     # Render all set
-    # Not sure if views are gucci
     @views upload!(vertex_buffer(br.va), vb[1:vidx-1])
-    # upload!(vertex_buffer(br.va), vb)
     for i in 1:tidx
         bind(tb[i], i)
     end
@@ -227,17 +227,23 @@ destroy(br::BatchRenderer) = begin destroy(br.va); destroy(br.shader) end
 # ... I hope I didn't overthink this
 struct ApplyTransform <: System end
 
-requested_components(::ApplyTransform) = (Transform, QuadVertices)
+requested_components(::ApplyTransform) = (Transform, InstancedQuad)
 function update!(app, ::ApplyTransform, reg::AbstractLedger, ts)
     transforms = reg[Transform]
-    quads = reg[QuadVertices]
+    quads = reg[InstancedQuad]
 
     for e in @entities_in(transforms && quads)
         T = transforms[e]
-        T.has_changed || continue
-        T.has_changed = false
-        # generate new, correctly placed quad
-        quads[e] = QuadVertices(T, quads[e].uv)
+        if T.has_changed
+            T.has_changed = false
+            # generate new, correctly placed quad
+            quads[e].positions = (
+                T.transform * Vec4f0(-0.5, -0.5, 0, 1), 
+                T.transform * Vec4f0( 0.5, -0.5, 0, 1), 
+                T.transform * Vec4f0(-0.5,  0.5, 0, 1), 
+                T.transform * Vec4f0( 0.5,  0.5, 0, 1)
+            )
+        end
     end
     nothing
 end
@@ -265,7 +271,14 @@ end
 
 # These function handle the "has_changed = true" update on their own
 function _recalculate!(quad::Quad)
-    quad[QuadVertices] = QuadVertices(quad[Transform], quad[QuadVertices].uv)
+    T = quad[Transform]
+    Q = quad[InstancedQuad]
+    Q.positions = (
+        T.transform * Vec4f0(-0.5, -0.5, 0, 1), 
+        T.transform * Vec4f0( 0.5, -0.5, 0, 1), 
+        T.transform * Vec4f0(-0.5,  0.5, 0, 1), 
+        T.transform * Vec4f0( 0.5,  0.5, 0, 1)
+    )
     nothing
 end
 
