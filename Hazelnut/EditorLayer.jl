@@ -175,7 +175,7 @@ end
     CImGui.PushStyleVar(CImGui.ImGuiStyleVar_WindowPadding, (0, 0))
     CImGui.Begin("Viewport")
     sl.viewport_focused = CImGui.IsWindowFocused()
-    gui_layer.consume_events = !(sl.viewport_focused) || !CImGui.IsWindowHovered()
+    gui_layer.consume_events = !(sl.viewport_focused) && !CImGui.IsWindowHovered()
     window_size = CImGui.GetContentRegionAvail()
     w = trunc(UInt32, window_size.x); h = trunc(UInt32, window_size.y)
     if (w, h) != size(sl.framebuffer)
