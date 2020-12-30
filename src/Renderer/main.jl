@@ -3,6 +3,8 @@
 # "high"-level Renderer implementation
 include("SubTexture2D.jl")
 
+include("EditorCamera.jl")
+
 # ECS related (core - wrappers and functionality)
 include("entity_wrapper.jl")
 include("systems.jl")

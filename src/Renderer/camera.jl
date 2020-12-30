@@ -38,7 +38,7 @@ function CameraComponent(;
         projection = if projection_type === Orthographic
             orthographicprojection(aspect, height, o_near, o_far)
         else
-            perspectiveprojection(cc.fov, aspect, p_near, p_far)
+            perspectiveprojection(fov, aspect, p_near, p_far)
         end,
         projection_view = Mat4f0(I)
     )

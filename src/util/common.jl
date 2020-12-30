@@ -96,3 +96,27 @@ current(t::Timestep) = t.t
 Base.time(t::Timestep) = t.t
 Base.step(t::Timestep) = t.dt
 delta(t::Timestep) = t.dt
+
+
+
+################################################################################
+
+
+
+struct Degree
+    value::Float64
+end
+const ° = Degree(1)
+
+Base.:(*)(x::Real, y::Degree) = Degree(x * y.value)
+Base.:(*)(x::Degree, y::Degree) = Degree(x.value * y.value)
+Base.:(+)(x::Degree, y::Degree) = Degree(x.value + y.value)
+Base.:(-)(x::Degree, y::Degree) = Degree(x.value - y.value)
+Base.:(/)(x::Degree, y::Degree) = Degree(x.value / y.value)
+Base.:(/)(x::Real, y::Degree) = Degree(x / y.value)
+Base.:(/)(x::Degree, y::Real) = Degree(x.value / y)
+
+Base.convert(::Type{T}, d::Degree) where {T <: Real} = convert(T, d.value * pi/180)
+radians(d::Degree) = d.value * pi/180
+radians(d) = d
+radians(::Type{T}, d) where {T} = convert(T, d)

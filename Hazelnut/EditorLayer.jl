@@ -11,6 +11,7 @@ include("Panels/SceneHierarchy.jl")
 
 mutable struct EditorLayer <: AbstractLayer
     framebuffer::Framebuffer
+    cam::Hazel.EditorCamera
     scene::Scene
     spritesheet::RegularSpriteSheet
 
@@ -35,12 +36,12 @@ mutable struct EditorLayer <: AbstractLayer
         scene = layer.scene = Scene()
     
         layer.quad = addQuad!(scene, 
-            position = Vec3f0(0, 0, 0.1), 
+            position = Vec3f0(0, 0, -0.1), 
             color = Vec4f0(1, 0.5, 0.5, 1), 
             name = "Red Square"
         )
         addQuad!(scene, 
-            position = Vec3f0(0, 0.1, 0.05), 
+            position = Vec3f0(0, 0.1, -0.05), 
             color = Vec4f0(0.5, 1.0, 0.5, 1), 
             name = "Green Square"
         )
@@ -126,10 +127,13 @@ function Hazel.attach(l::EditorLayer, app::AbstractApplication)
     l.framebuffer = Hazel.Framebuffer(size(Hazel.window(app))...)
     id = l.framebuffer.t_id
     Hazel.CImGui.OpenGLBackend.g_ImageTexture[Int(id)] = id
+    l.cam = Hazel.EditorCamera(viewport = Vec2f0(size(l.framebuffer)))
 end
 
 
 @HZ_profile function Hazel.update!(app, l::EditorLayer, ts)
+    update!(app, l.cam, ts)
+
     # Clear window
     RenderCommand.clear()
 
@@ -138,7 +142,7 @@ end
     RenderCommand.clear()
 
     @HZ_profile "Render Layer" begin
-        update!(app, l.scene, ts)
+        Hazel.update_editor!(app, l.scene, l.cam, ts)
     end
     Hazel.unbind(l.framebuffer)
 
@@ -179,9 +183,9 @@ end
     window_size = CImGui.GetContentRegionAvail()
     w = trunc(UInt32, window_size.x); h = trunc(UInt32, window_size.y)
     if (w, h) != size(sl.framebuffer)
-        @info ">> $window_size, $(size(sl.framebuffer))"
         resize!(sl.framebuffer, w, h)
         Hazel.resize_viewport!(sl.scene, w, h)
+        Hazel.resize_viewport!(sl.cam, w, h)
         update!(app, sl, ts)
     end
     CImGui.Image(Ptr{Cvoid}(Int(sl.framebuffer.t_id)), window_size, (0, 1), (1, 0))
@@ -195,9 +199,7 @@ end
 
 
 @HZ_profile function Hazel.handle!(l::EditorLayer, e::AbstractEvent)
-    # if l.viewport_focused[]
-    #     return handle!(l.camera_controller, e)
-    # end
+    Hazel.handle!(l.cam, e)
     false
 end
 

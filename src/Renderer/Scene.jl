@@ -10,10 +10,6 @@ end
     Scene(registry, Texture2D(fill(RGBA(1, 1, 1, 1), 1, 1)))
 end
 
-@HZ_profile function update!(app, scene::Scene, ts)
-    update!(app, scene.registry, ts)
-end
-
 """
     blank_texture(scene)
 
@@ -23,26 +19,15 @@ blank_texture(scene::Scene) = scene.blank_texture
 
 destroy(_) = nothing
 
-Base.push!(scene::Scene, stage::Stage) = push!(scene.registry, stage)
-
-
-
-function resize_viewport!(scene::Scene, w, h)
-    ccs = scene[CameraComponent]
-    for e in @entities_in(ccs)
-        if !ccs[e].fix_aspect_ratio
-            ccs[e].aspect = Float32(w/h)
-        end
-    end
-    nothing
+update!(app, scene::Scene, ts) = update_runtime!(app, scene, ts)
+@HZ_profile function update_runtime!(app, scene::Scene, ts)
+    update_runtime!(app, scene.registry, ts)
+end
+@HZ_profile function update_editor!(app, scene::Scene, camera::EditorCamera, ts)
+    update_editor!(app, scene.registry, camera, ts)
 end
 
-
-
-################################################################################
-### Scene related ECS extensions
-################################################################################
-
+Base.push!(scene::Scene, stage::Stage) = push!(scene.registry, stage)
 
 registry(scene::Scene) = scene.registry
 Base.delete!(scene::Scene, e::RawEntity) = delete!(scene.registry, e)
@@ -69,6 +54,25 @@ function Overseer.schedule_delete!(s::Scene, e::AbstractEntity)
 end
 Base.setindex!(s::Scene, v, e::AbstractEntity) = s.registry[entity(e)] = v
 Base.getindex(s::Scene, e::AbstractEntity) = s.registry[entity(e)]
+
+
+
+
+function resize_viewport!(scene::Scene, w, h)
+    ccs = scene[CameraComponent]
+    for e in @entities_in(ccs)
+        if !ccs[e].fix_aspect_ratio
+            ccs[e].aspect = Float32(w/h)
+        end
+    end
+    nothing
+end
+
+
+
+################################################################################
+### Scene related ECS extensions
+################################################################################
 
 
 

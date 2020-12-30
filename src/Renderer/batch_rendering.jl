@@ -138,7 +138,12 @@ end
 
 requested_components(::BatchRenderer) = (InstancedQuad,)
 
-function update!(app, br::BatchRenderer, reg::AbstractLedger, ts)
+function update_editor!(app, br::BatchRenderer, reg::AbstractLedger, cam, ts)
+    render(br, reg, cam.projection_view)
+    nothing
+end
+
+function update_runtime!(app, br::BatchRenderer, reg::AbstractLedger, ts)
     # Find active camera
     cameras = reg[CameraComponent]
     trg = nothing
@@ -148,10 +153,13 @@ function update!(app, br::BatchRenderer, reg::AbstractLedger, ts)
             break
         end
     end
-    trg === nothing && return
-    projection_view = cameras[trg].projection_view
+    if trg !== nothing
+        render(br, reg, cameras[trg].projection_view)
+    end
+    nothing
+end
 
-
+function render(br, reg, projection_view)
     # Render
     quads = reg[InstancedQuad]
 
@@ -227,6 +235,7 @@ destroy(br::BatchRenderer) = begin destroy(br.va); destroy(br.shader) end
 struct ApplyTransform <: System end
 
 requested_components(::ApplyTransform) = (Transform, InstancedQuad)
+update_editor!(app, s, r, ts) = update!(app, s, reg, ts)
 function update!(app, ::ApplyTransform, reg::AbstractLedger, ts)
     transforms = reg[Transform]
     quads = reg[InstancedQuad]

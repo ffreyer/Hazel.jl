@@ -254,6 +254,10 @@ function draw_components!(p, entity::Hazel.Entity)
         if CImGui.DragFloat("Tiling Factor", tf, 0.05f0)
             quad.tilingfactor = tf[]
         end
+        uv = collect(quad.uv)
+        if CImGui.DragFloat4("UV (LRBT)", uv, 0.05f0)
+            quad.uv = LRBT(uv)
+        end
     end begin
         delete!(entity, Hazel.InstancedQuad)
     end

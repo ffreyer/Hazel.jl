@@ -192,7 +192,7 @@ end
 
 # GeometryBasics.origin(p::Pivot) = p.origin
 
-# rotationmatrix4(q::Quaternion{T}) where {T} = Mat4{T}(q)
+rotationmatrix4(q::Quaternion{T}) where {T} = Mat4{T}(q)
 
 
 # function transformationmatrix(p::Pivot)

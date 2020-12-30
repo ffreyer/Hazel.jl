@@ -43,7 +43,8 @@ end
 function attach(l::ImGuiLayer, app::AbstractApplication)
     l.context = CImGui.CreateContext()
     # IDK
-    # io = CImGui.GetIO()
+    io = CImGui.GetIO()
+    io.ConfigWindowsMoveFromTitleBarOnly = true
     # fonts = io.Fonts
     # CImGui.AddFontDefault(fonts)
     # CImGui.AddFontFromFileTTF(fonts, "assets/fonts/Open Sans/OpenSans-Regular.ttf", 18)
