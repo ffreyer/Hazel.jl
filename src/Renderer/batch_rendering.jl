@@ -152,7 +152,6 @@ function update!(app, br::BatchRenderer, reg::AbstractLedger, ts)
     projection_view = cameras[trg].projection_view
 
 
-
     # Render
     quads = reg[InstancedQuad]
 

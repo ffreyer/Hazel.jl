@@ -13,3 +13,9 @@ begin
     end
     nothing
 end
+
+# TODO
+# - make custom load/save dialogues
+# - add shortcuts (Ctrl+O open, Ctrl+Shift+S Save as, Ctrl+N new)
+# - maybe fix clear p.selected when changing p.scene
+# - maybe add stages in entity creation

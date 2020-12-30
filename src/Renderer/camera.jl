@@ -52,7 +52,10 @@ end
 
 # Maybe?
 function Base.setproperty!(cc::CameraComponent, field::Symbol, value)
-    if field in (:aspect, :height, :o_near, :o_far, :p_near, :p_far, :fov, :projection_type)
+    if  (field in (:projection_type, :aspect)) ||
+        (cc.projection_type == Orthographic && field in (:height, :o_near, :o_far)) ||
+        (cc.projection_type == Perspective && field in (:fov, :p_near, :p_far))
+
         setfield!(cc, :has_changed, true)
         projection!(cc)
     end
@@ -122,7 +125,7 @@ end
 
 function recalculate_projection_view!(cam::Camera)
     cam[CameraComponent].projection_view = 
-        cam[Transform].transform * cam[CameraComponent].projection
+        cam[CameraComponent].projection * cam[Transform].transform
     nothing
 end
 
@@ -184,7 +187,7 @@ function update!(app, ::CameraUpdate, reg::AbstractLedger, ts)
             T = transforms[e]
             C = cameras[e]
             if T.has_changed || C.has_changed
-                C.projection_view = T.transform * C.projection
+                C.projection_view = C.projection * T.transform
                 T.has_changed = false
                 C.has_changed = false
             end

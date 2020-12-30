@@ -162,7 +162,7 @@ function draw_components!(p, entity::Hazel.Entity)
             t = p.selected[Hazel.Transform]
             push!(
                 p.selected, 
-                Hazel.InstancedQuad(transform, Hazel.blank_texture(p.scene))
+                Hazel.InstancedQuad(t, Hazel.blank_texture(p.scene))
             )
             CImGui.CloseCurrentPopup()
         end

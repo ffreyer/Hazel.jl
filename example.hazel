@@ -1,0 +1,59 @@
+Entities:
+  - Entity: "7cc84af5-01ab-4b3c-8560-0343899c502d"
+    NameComponent:
+      name: "Quad left"
+    Transform:
+      translation: [0.0, 0.0, 0.0]
+      rotation: [0.0, 0.0, 0.0]
+      scale: [1.0, 1.0, 1.0]
+    Instanced Quad:
+      visible: true
+      uv: LRBT{Float32}(0.0f0, 1.0f0, 0.0f0, 1.0f0)
+      texture path: ""
+      tiling factor: 1.0
+      color: [1.0, 0.0, 0.0, 1.0]
+  - Entity: "b2cb7d87-fa33-4138-88c6-3e0f99dad214"
+    NameComponent:
+      name: "Camera"
+    Camera:
+      perspective near: 0.01
+      aspect: 1.7777778
+      height: 10.0
+      fix aspect ratio: false
+      orthographic near: -1.0
+      fov: 45.0
+      active: true
+      orthographic far: 1.0
+      perspective far: 9984.0
+      projection type: Perspective
+    Transform:
+      translation: [-0.25, 0.0, -3.3]
+      rotation: [0.5235988, -0.5235988, 0.0]
+      scale: [1.0, 1.0, 1.0]
+  - Entity: "14f303bc-eba3-4b58-a9fe-05b253173488"
+    NameComponent:
+      name: "Quad right"
+    Transform:
+      translation: [0.5, 0.0, -0.5]
+      rotation: [0.0, 1.5707964, 0.0]
+      scale: [1.0, 1.0, 1.0]
+    Instanced Quad:
+      visible: true
+      uv: LRBT{Float32}(0.0f0, 1.0f0, 0.0f0, 1.0f0)
+      texture path: ""
+      tiling factor: 1.0
+      color: [0.372549, 0.0, 0.0, 1.0]
+  - Entity: "93995332-6baf-45c0-9b99-f6e55d1249f1"
+    NameComponent:
+      name: "Quad top"
+    Transform:
+      translation: [0.0, 0.5, -0.5]
+      rotation: [1.5707964, 0.0, 0.0]
+      scale: [1.0, 1.0, 1.0]
+    Instanced Quad:
+      visible: true
+      uv: LRBT{Float32}(0.0f0, 1.0f0, 0.0f0, 1.0f0)
+      texture path: ""
+      tiling factor: 1.0
+      color: [0.5980392, 0.0, 0.0, 1.0]
+Scene: "Unnamed Scene"

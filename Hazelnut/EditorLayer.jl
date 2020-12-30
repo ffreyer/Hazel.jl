@@ -146,21 +146,30 @@ end
 end
 
 @HZ_profile function Hazel.update!(app, gui_layer::ImGuiLayer, sl::EditorLayer, ts)
-    # shrugs
-    if CImGui.BeginMenuBar()
+    if CImGui.BeginMainMenuBar()
         if CImGui.BeginMenu("File")
+            if CImGui.MenuItem("New")
+                sl.scene = Hazel.Scene()
+                sl.p.scene = sl.scene
+                push!(sl.scene, Hazel.Stage(:PreRender, [Hazel.RunScript(), Hazel.CameraUpdate()]))
+                addBatchRenderingStage!(sl.scene)
+            end
             if CImGui.MenuItem("Serialize")
-                Hazel.serialize("example.hazel", scene)
+                Hazel.serialize("example.hazel", sl.scene)
             end
             if CImGui.MenuItem("Deserialize")
                 sl.scene = Hazel.deserialize("example.hazel")
+                sl.p.scene = sl.scene
+                # TODO: Maybe activate those on Entity creation?
+                push!(sl.scene, Hazel.Stage(:PreRender, [Hazel.RunScript(), Hazel.CameraUpdate()]))
+                addBatchRenderingStage!(sl.scene)
             end
             if CImGui.MenuItem("Exit")
                 destroy(app)
             end
             CImGui.EndMenu()
         end
-        CImGui.EndMenuBar()
+        CImGui.EndMainMenuBar()
     end
 
     CImGui.PushStyleVar(CImGui.ImGuiStyleVar_WindowPadding, (0, 0))
@@ -168,8 +177,9 @@ end
     sl.viewport_focused = CImGui.IsWindowFocused()
     gui_layer.consume_events = !(sl.viewport_focused) || !CImGui.IsWindowHovered()
     window_size = CImGui.GetContentRegionAvail()
-    if window_size != size(sl.framebuffer)
-        w = trunc(UInt32, window_size.x); h = trunc(UInt32, window_size.y)
+    w = trunc(UInt32, window_size.x); h = trunc(UInt32, window_size.y)
+    if (w, h) != size(sl.framebuffer)
+        @info ">> $window_size, $(size(sl.framebuffer))"
         resize!(sl.framebuffer, w, h)
         Hazel.resize_viewport!(sl.scene, w, h)
         update!(app, sl, ts)
